@@ -22,3 +22,6 @@ npm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# firebase emulators
+*-debug.log
+.firebase/

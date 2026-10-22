@@ -1,0 +1,708 @@
+/* My Files — built on the site theme variables so all three themes work */
+
+.app {
+  --hover: color-mix(in srgb, var(--text) 6%, transparent);
+  --selected: color-mix(in srgb, var(--primary) 18%, transparent);
+  --danger: #e5484d;
+  --ok: #30a46c;
+  --radius: 10px;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 64px 1fr;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: grid;
+  grid-template-columns: 240px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 18px;
+}
+.brandMark {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+  color: #fff;
+  font-size: 16px;
+}
+.search {
+  max-width: 640px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.search input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+}
+.search input::placeholder {
+  color: var(--text-muted);
+}
+.topRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---------- Layout ---------- */
+.body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 0;
+}
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--border);
+  min-height: 0;
+}
+.newButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  height: 52px;
+  padding: 0 22px 0 16px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: box-shadow 0.15s, background 0.15s;
+}
+.newButton:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--selected);
+}
+.sidebarFooter {
+  margin-top: auto;
+  padding: 12px 6px 4px;
+}
+
+.main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 20px 8px 16px;
+}
+
+/* ---------- Breadcrumbs ---------- */
+.crumbs {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  font-size: 20px;
+}
+.crumb {
+  background: transparent;
+  border: 0;
+  color: var(--text-muted);
+  font-size: inherit;
+  padding: 4px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+.crumb:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.crumbCurrent {
+  composes: crumb;
+  color: var(--text);
+  font-weight: 500;
+  cursor: default;
+}
+.crumbCurrent:hover {
+  background: transparent;
+}
+.crumbSep {
+  color: var(--text-muted);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ---------- Buttons ---------- */
+.iconButton {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  transition: background 0.12s, color 0.12s;
+}
+.iconButton:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.button {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+.button:hover {
+  background: var(--hover);
+}
+.primaryButton {
+  composes: button;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.primaryButton:hover {
+  background: var(--primary-hover);
+}
+.dangerButton {
+  composes: button;
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.dangerButton:hover {
+  background: color-mix(in srgb, var(--danger) 85%, #000);
+}
+
+/* ---------- File list ---------- */
+.listWrap {
+  flex: 1;
+  overflow: auto;
+  padding: 0 12px 96px;
+  outline: none;
+}
+.row,
+.headerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px 110px 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 0 12px;
+}
+.headerRow {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 44px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.sortButton {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sortButton:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.row {
+  height: 52px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 8px;
+  cursor: default;
+  user-select: none;
+  /* Rows far off screen skip layout and paint, so long folders stay smooth */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 52px;
+}
+.row:hover {
+  background: var(--hover);
+}
+.rowSelected,
+.rowSelected:hover {
+  background: var(--selected);
+}
+.rowPending {
+  opacity: 0.6;
+}
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+.nameText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metaCell {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.rowActions {
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.row:hover .rowActions,
+.rowSelected .rowActions,
+.rowActions[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.fileIcon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+/* ---------- Empty / loading ---------- */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 80px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.emptyArt {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-elevated);
+  margin-bottom: 8px;
+}
+.emptyTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+.skeleton {
+  height: 14px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--hover) 25%, color-mix(in srgb, var(--text) 11%, transparent) 50%, var(--hover) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- Drag and drop ---------- */
+.dropOverlay {
+  position: absolute;
+  inset: 8px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--primary);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--primary) 10%, var(--bg));
+  pointer-events: none;
+  animation: fadeIn 0.12s ease;
+}
+.dropCard {
+  padding: 14px 22px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- Menus ---------- */
+.menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 220px;
+  padding: 6px 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+  animation: pop 0.1s ease;
+}
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+}
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+.menuItemDanger {
+  composes: menuItem;
+  color: var(--danger);
+}
+.menuDivider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--border);
+}
+
+/* ---------- Dialogs ---------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  animation: fadeIn 0.12s ease;
+}
+.dialog {
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  animation: pop 0.14s ease;
+}
+.dialogTitle {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+.dialogText {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.dialogInput {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+}
+.dialogInput:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* ---------- Upload panel ---------- */
+.uploadPanel {
+  position: fixed;
+  right: 24px;
+  bottom: 0;
+  z-index: 40;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  border-radius: 14px 14px 0 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideUp 0.18s ease;
+}
+.uploadHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 54px;
+  padding: 0 8px 0 18px;
+  background: var(--bg-elevated);
+}
+.uploadTitle {
+  flex: 1;
+  font-weight: 600;
+  font-size: 15px;
+}
+.uploadOverall {
+  height: 3px;
+  background: var(--hover);
+}
+.uploadOverallBar {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.2s linear;
+}
+.uploadList {
+  max-height: 320px;
+  overflow: auto;
+}
+.uploadRow {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px 10px 16px;
+}
+.uploadRow:hover {
+  background: var(--hover);
+}
+.uploadName {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.uploadMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.uploadMetaError {
+  composes: uploadMeta;
+  color: var(--danger);
+}
+.uploadBar {
+  height: 4px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--hover);
+  overflow: hidden;
+}
+.uploadBarFill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.2s linear;
+}
+.statusIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+.cancelOnHover {
+  display: none;
+}
+.uploadRow:hover .cancelOnHover {
+  display: grid;
+}
+.uploadRow:hover .hideOnHover {
+  display: none;
+}
+
+/* ---------- Storage meter ---------- */
+.meterLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.meterTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--hover);
+  overflow: hidden;
+}
+.meterFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.meterText {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  z-index: 70;
+  max-width: min(480px, calc(100vw - 48px));
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  animation: slideUp 0.18s ease;
+}
+
+/* ---------- Mobile ---------- */
+.fab {
+  display: none;
+}
+@media (max-width: 760px) {
+  .topbar {
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    padding: 0 10px 0 12px;
+  }
+  .brandName,
+  .hideOnMobile {
+    display: none;
+  }
+  .body {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    display: none;
+  }
+  .row,
+  .headerRow {
+    grid-template-columns: minmax(0, 1fr) 70px 44px;
+  }
+  .modifiedCol {
+    display: none;
+  }
+  .rowActions {
+    opacity: 1;
+  }
+  .crumbs {
+    font-size: 17px;
+  }
+  .fab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 18px;
+    border: 0;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+  .uploadPanel {
+    right: 0;
+    left: 0;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app *,
+  .uploadPanel,
+  .toast {
+    animation: none !important;
+    transition: none !important;
+  }
+}

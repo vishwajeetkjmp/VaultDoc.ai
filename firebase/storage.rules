@@ -1,0 +1,48 @@
+rules_version = '2';
+
+// Files live at users/{uid}/files/{itemId}. Limits come from Firestore:
+//   config/limits  { maxFileBytes, quotaBytes }   (defaults below if missing)
+//   users/{uid}    { usedBytes, quotaBytes? }     (quotaBytes overrides the default per user)
+// Keep DEFAULT_* and the allowed types in sync with apps/web/lib/files/limits.ts and fileTypes.ts.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function limits() {
+      let path = /databases/(default)/documents/config/limits;
+      return firestore.exists(path)
+        ? firestore.get(path).data
+        : { 'maxFileBytes': 20971520, 'quotaBytes': 1073741824 };
+    }
+
+    function account(uid) {
+      return firestore.get(/databases/(default)/documents/users/$(uid)).data;
+    }
+
+    function allowedType(contentType) {
+      return contentType.matches(
+        'application/pdf'
+        + '|application/msword'
+        + '|application/vnd\\.openxmlformats-officedocument\\.(wordprocessingml\\.document|spreadsheetml\\.sheet|presentationml\\.presentation)'
+        + '|application/vnd\\.ms-excel'
+        + '|application/vnd\\.ms-powerpoint'
+        + '|application/rtf'
+        + '|application/json'
+        + '|text/(plain|csv|markdown)'
+        + '|image/(png|jpeg|webp|gif)'
+      );
+    }
+
+    match /users/{uid}/files/{itemId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.size <= limits().maxFileBytes
+        && account(uid).usedBytes + request.resource.size
+             <= account(uid).get('quotaBytes', limits().quotaBytes)
+        && allowedType(request.resource.contentType);
+
+      // Files are never overwritten in place; deletes go through Firestore + Cloud Functions
+      allow update, delete: if false;
+    }
+  }
+}

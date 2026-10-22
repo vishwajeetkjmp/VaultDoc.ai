@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import type { User } from "firebase/auth";
 import Avatar from "./Avatar";
 import { signOutUser } from "../lib/auth";
 import { getDisplayName, getFirstName } from "../lib/profile";
+
+// Loaded only when the card opens, so pages like the landing page don't pull in Firestore
+const StorageMeter = dynamic(() => import("./files/StorageMeter"), { ssr: false });
 
 /** Avatar button that opens a Gmail-style account card. */
 export default function ProfileMenu({ user }: { user: User }) {
@@ -62,8 +66,12 @@ export default function ProfileMenu({ user }: { user: User }) {
           {user.displayName && <div style={styles.fullName}>{name}</div>}
 
           <a href="/dashboard" style={styles.manageBtn} onClick={() => setOpen(false)}>
-            Go to dashboard
+            Go to My Files
           </a>
+
+          <div style={styles.storage}>
+            <StorageMeter uid={user.uid} />
+          </div>
 
           <button onClick={handleSignOut} style={styles.signOutBtn}>
             Sign out
@@ -113,6 +121,13 @@ const styles: Record<string, React.CSSProperties> = {
   bigAvatar: { margin: "18px 0 10px" },
   greeting: { fontSize: 22, fontWeight: 400 },
   fullName: { fontSize: 14, color: "var(--text-muted)", marginTop: 2 },
+  storage: {
+    width: "100%",
+    marginTop: 16,
+    padding: "14px 16px",
+    border: "1px solid var(--border)",
+    borderRadius: 16,
+  },
   manageBtn: {
     marginTop: 16,
     padding: "8px 22px",
