@@ -1,0 +1,15 @@
+{
+  "name": "vaultdocai",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VaultDocAI — AI document intelligence. Understand every document in seconds.",
+  "workspaces": [
+    "apps/web",
+    "packages/core"
+  ],
+  "scripts": {
+    "dev": "npm --workspace @vaultdocai/web run dev",
+    "build": "npm --workspace @vaultdocai/web run build",
+    "start": "npm --workspace @vaultdocai/web run start"
+  }
+}
