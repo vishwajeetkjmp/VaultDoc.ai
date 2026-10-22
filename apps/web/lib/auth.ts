@@ -5,12 +5,18 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  updateProfile,
   User,
 } from "firebase/auth";
 import { auth } from "./firebase";
 
-export function signUp(email: string, password: string) {
-  return createUserWithEmailAndPassword(auth, email, password);
+export async function signUp(email: string, password: string, name?: string) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  if (name?.trim()) {
+    // Store the name on the Firebase user so the profile menu can greet them by it
+    await updateProfile(cred.user, { displayName: name.trim() });
+  }
+  return cred;
 }
 
 export function signIn(email: string, password: string) {

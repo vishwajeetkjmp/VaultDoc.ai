@@ -7,6 +7,7 @@ import { signUp, signInWithGoogle } from "../../lib/auth";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -45,7 +46,7 @@ export default function SignUpPage() {
     }
     setLoading(true);
     try {
-      await signUp(email, password);
+      await signUp(email, password, name);
       router.push("/dashboard");
     } catch (err: any) {
       setError(mapError(err?.code ?? ""));
@@ -82,6 +83,17 @@ export default function SignUpPage() {
         </div>
 
         <form onSubmit={handleSubmit}>
+          <label style={styles.label}>Full name</label>
+          <input
+            type="text"
+            placeholder="Your name"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            style={styles.input}
+          />
+
           <label style={styles.label}>Email address</label>
           <input
             type="email"
