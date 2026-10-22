@@ -2,8 +2,12 @@
 
 import ToolDropdown from "./ToolDropdown";
 import ThemeToggle from "./ThemeToggle";
+import ProfileMenu from "./ProfileMenu";
+import { useAuth } from "./AuthProvider";
 
 export default function Navbar() {
+  const { user, loading } = useAuth();
+
   return (
     <nav
       style={{
@@ -58,30 +62,36 @@ export default function Navbar() {
           gap: "12px",
         }}
       >
-        <a
-          href="/signin"
-          style={{
-            fontSize: "15px",
-            fontWeight: 500,
-            padding: "8px 16px",
-          }}
-        >
-          Sign In
-        </a>
-        <a
-          href="/signup"
-          style={{
-            background: "var(--primary)",
-            color: "#fff",
-            fontSize: "15px",
-            fontWeight: 600,
-            padding: "9px 18px",
-            borderRadius: "8px",
-          }}
-        >
-          Sign Up
-        </a>
+        {/* Hide auth links until Firebase reports whether someone is signed in, to avoid a flash */}
+        {!loading && !user && (
+          <>
+            <a
+              href="/signin"
+              style={{
+                fontSize: "15px",
+                fontWeight: 500,
+                padding: "8px 16px",
+              }}
+            >
+              Sign In
+            </a>
+            <a
+              href="/signup"
+              style={{
+                background: "var(--primary)",
+                color: "#fff",
+                fontSize: "15px",
+                fontWeight: 600,
+                padding: "9px 18px",
+                borderRadius: "8px",
+              }}
+            >
+              Sign Up
+            </a>
+          </>
+        )}
         <ThemeToggle />
+        {user && <ProfileMenu user={user} />}
       </div>
     </nav>
   );

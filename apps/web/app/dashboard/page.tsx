@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useAuth, RequireAuth } from "../../components/AuthProvider";
-import { signOutUser } from "../../lib/auth";
+import ProfileMenu from "../../components/ProfileMenu";
+import { getFirstName } from "../../lib/profile";
 
 export default function DashboardPage() {
   return (
@@ -13,13 +13,7 @@ export default function DashboardPage() {
 }
 
 function Dashboard() {
-  const router = useRouter();
   const { user } = useAuth();
-
-  async function handleSignOut() {
-    await signOutUser();
-    router.replace("/");
-  }
 
   return (
     <div style={styles.page}>
@@ -29,16 +23,13 @@ function Dashboard() {
           <span style={styles.brand}>VaultDocAI</span>
         </div>
         <div style={styles.navRight}>
-          <span style={styles.email}>{user?.email}</span>
-          <button onClick={handleSignOut} style={styles.signOutBtn}>
-            Sign out
-          </button>
+          {user && <ProfileMenu user={user} />}
         </div>
       </nav>
 
       <main style={styles.main}>
         <h1 style={styles.heading}>
-          Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""} 👋
+          Welcome back{user ? `, ${getFirstName(user)}` : ""} 👋
         </h1>
         <p style={styles.sub}>Here's an overview of your workspace.</p>
 
@@ -121,17 +112,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   brand: { fontSize: 17, fontWeight: 700 },
   navRight: { display: "flex", alignItems: "center", gap: 16 },
-  email: { color: "#8b97b0", fontSize: 14 },
-  signOutBtn: {
-    padding: "8px 16px",
-    background: "#111a2e",
-    border: "1px solid #1c2740",
-    borderRadius: 8,
-    color: "#c7d0e0",
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: "pointer",
-  },
   main: { maxWidth: 960, margin: "0 auto", padding: "40px 32px" },
   heading: { fontSize: 28, fontWeight: 700, margin: 0 },
   sub: { color: "#8b97b0", fontSize: 15, margin: "8px 0 32px" },
