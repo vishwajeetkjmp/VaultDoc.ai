@@ -1,25 +1,31 @@
 .wrap {
   position: relative;
 }
+/* Plain menu item, like "Free Tool": text plus a thin chevron */
 .trigger {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 500;
+  gap: 6px;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 400;
   white-space: nowrap;
+  transition: color 0.15s;
 }
-.trigger:hover {
-  border-color: color-mix(in srgb, var(--text) 25%, transparent);
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  color: var(--text);
 }
-.caret {
-  font-size: 10px;
-  opacity: 0.7;
+.chevron {
+  opacity: 0.75;
+  transition: transform 0.15s;
+}
+.trigger[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
 }
 .panel {
   position: absolute;

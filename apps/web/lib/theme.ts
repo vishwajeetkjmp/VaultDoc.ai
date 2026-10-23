@@ -1,10 +1,8 @@
-export type ThemeName = "dark" | "grey" | "light" | "clay" | "clay-dark";
+export type ThemeName = "dark" | "clay" | "clay-dark";
 
 /** Every theme, in menu order, with a small preview (page colour + accent) for the theme menu. */
 export const THEMES: { id: ThemeName; label: string; bg: string; accent: string }[] = [
   { id: "dark", label: "Dark Blue", bg: "#0a1628", accent: "#3b82f6" },
-  { id: "grey", label: "Grey", bg: "#2b2b2b", accent: "#6b7280" },
-  { id: "light", label: "Off-White", bg: "#faf9f4", accent: "#d4a017" },
   { id: "clay", label: "Clay", bg: "#f5f4ed", accent: "#c96442" },
   { id: "clay-dark", label: "Clay Dark", bg: "#151515", accent: "#d77657" },
 ];

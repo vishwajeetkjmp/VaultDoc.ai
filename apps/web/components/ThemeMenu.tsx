@@ -49,12 +49,11 @@ export default function ThemeMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Theme: ${THEME_LABELS[theme]}. Change theme`}
-        title="Change theme"
       >
-        🎨 <span data-theme-label>{THEME_LABELS[theme]}</span>
-        <span className={styles.caret} aria-hidden>
-          ▾
-        </span>
+        Theme
+        <svg className={styles.chevron} width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="m3 4.5 3 3 3-3" />
+        </svg>
       </button>
       {open && (
         <div className={styles.panel} role="menu" aria-label="Themes">

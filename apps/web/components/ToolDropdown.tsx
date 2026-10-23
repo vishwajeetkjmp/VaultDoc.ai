@@ -25,7 +25,10 @@ export default function ToolDropdown() {
   return (
     <div ref={ref} className={styles.dropdown} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
       <button className={styles.dropdownButton} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        Free Tool ▾
+        Free Tool
+        <svg className={styles.chevron} width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="m3 4.5 3 3 3-3" />
+        </svg>
       </button>
       {open && (
         <div className={styles.dropdownPanel} role="menu">
