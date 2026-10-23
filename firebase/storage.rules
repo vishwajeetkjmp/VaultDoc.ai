@@ -38,5 +38,17 @@ service firebase.storage {
       // Files are never overwritten in place; deletes go through Firestore + Cloud Functions
       allow update, delete: if false;
     }
+
+    // Secure Vault: encrypted in the browser, so the server only ever sees opaque bytes.
+    // A little headroom over the file limit for the encryption's IV and tag.
+    match /users/{uid}/vault/{itemId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.size <= maxFileBytes() + 1024
+        && request.resource.contentType == 'application/octet-stream';
+
+      allow update, delete: if false;
+    }
   }
 }

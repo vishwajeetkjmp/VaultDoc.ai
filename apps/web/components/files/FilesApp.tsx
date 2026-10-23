@@ -282,6 +282,10 @@ export default function FilesApp({ user }: { user: User }) {
             <HomeIcon size={18} />
             My Files
           </button>
+          <a href="/vault" className={styles.navItem} style={{ background: "transparent" }}>
+            <span aria-hidden>🔐</span>
+            Secure Vault
+          </a>
           <div className={styles.sidebarFooter}>
             <StorageMeter uid={uid} />
             <div className={styles.meterText} style={{ marginTop: 4 }}>

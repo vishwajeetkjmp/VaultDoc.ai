@@ -65,9 +65,14 @@ export default function ProfileMenu({ user }: { user: User }) {
           <div style={styles.greeting}>Hi, {getFirstName(user)}!</div>
           {user.displayName && <div style={styles.fullName}>{name}</div>}
 
-          <a href="/dashboard" style={styles.manageBtn} onClick={() => setOpen(false)}>
-            Go to My Files
-          </a>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+            <a href="/dashboard" style={styles.manageBtn} onClick={() => setOpen(false)}>
+              My Files
+            </a>
+            <a href="/vault" style={styles.manageBtn} onClick={() => setOpen(false)}>
+              🔐 Secure Vault
+            </a>
+          </div>
 
           <div style={styles.storage}>
             <StorageMeter uid={user.uid} />

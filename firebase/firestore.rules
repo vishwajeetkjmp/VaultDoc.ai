@@ -4,6 +4,8 @@ rules_version = '2';
 //   config/limits                   { maxFileBytes, quotaBytes }        — edited by admins in the console
 //   users/{uid}                     { usedBytes, fileCount, quotaBytes? } — usage is written only by Cloud Functions
 //   users/{uid}/items/{itemId}      a file or folder in the user's tree
+//   users/{uid}/vault/meta          Secure Vault: vault key wrapped by the recovery key
+//   users/{uid}/vaultItems/{itemId} Secure Vault: encrypted file/folder record
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -70,6 +72,49 @@ service cloud.firestore {
           && request.resource.data.nameLower == request.resource.data.name.lower();
 
         // Deleting a file record also deletes the stored file (Cloud Function)
+        allow delete: if isOwner(uid);
+      }
+
+      // ---------- Secure Vault (end-to-end encrypted; the server only sees ciphertext) ----------
+
+      // The vault key, wrapped by the user's recovery key. Created once; deleted only to erase the vault.
+      match /vault/{docId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && docId == 'meta'
+          && request.resource.data.keys().hasOnly(['version', 'salt', 'wrappedVaultKey', 'createdAt'])
+          && request.resource.data.wrappedVaultKey is string
+          && request.resource.data.salt is string;
+        allow update: if false;
+        allow delete: if isOwner(uid);
+      }
+
+      match /vaultItems/{itemId} {
+        function encryptedField(v) {
+          return v is string && v.size() > 0 && v.size() < 8192;
+        }
+
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && encryptedField(request.resource.data.encMeta)
+          && request.resource.data.parentId is string
+          && request.resource.data.ancestorIds is list
+          && request.resource.data.ancestorIds.size() <= 32
+          && (
+            (request.resource.data.kind == 'folder' && request.resource.data.status == 'ready')
+            ||
+            (request.resource.data.kind == 'file'
+              && request.resource.data.status == 'uploading'
+              && request.resource.data.size is int
+              && encryptedField(request.resource.data.wrappedKey)
+              && request.resource.data.storagePath == 'users/' + uid + '/vault/' + itemId)
+          );
+
+        // Rename only (re-encrypted name)
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['encMeta', 'updatedAt'])
+          && encryptedField(request.resource.data.encMeta);
+
         allow delete: if isOwner(uid);
       }
     }

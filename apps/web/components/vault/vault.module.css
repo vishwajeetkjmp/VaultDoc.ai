@@ -1,0 +1,240 @@
+/* Secure Vault gate screens (setup, unlock, recovery) — themed like the rest of the app */
+
+.page {
+  --danger: #e5484d;
+  --ok: #30a46c;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 16px 24px;
+  background: var(--bg);
+  color: var(--text);
+  position: relative;
+}
+.backLink {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.backLink:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.card {
+  width: 100%;
+  max-width: 440px;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+.icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.title {
+  font-size: 22px;
+  font-weight: 700;
+}
+.text {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  font-size: 14px;
+}
+.list li {
+  display: flex;
+  gap: 10px;
+  padding: 6px 0;
+}
+.warn {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.5;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
+}
+.error {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--danger);
+}
+.primary {
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+.primary:hover {
+  background: var(--primary-hover);
+}
+.primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.secondary {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.secondary:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.linkButton {
+  border: 0;
+  background: none;
+  padding: 4px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+.linkButton:hover {
+  text-decoration: underline;
+}
+.links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 18px;
+}
+
+/* Recovery key */
+.keyBox {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background: var(--bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+  word-spacing: 0.2em;
+  user-select: all;
+}
+.keyActions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 14px;
+  text-align: left;
+}
+.input {
+  width: 100%;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+}
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* PIN boxes */
+.pin {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.pinBox {
+  width: 46px;
+  height: 56px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  caret-color: transparent;
+}
+.pinBox:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.pinError .pinBox {
+  border-color: var(--danger);
+  animation: shake 0.3s;
+}
+@keyframes shake {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+@media (max-width: 380px) {
+  .pinBox {
+    width: 40px;
+    height: 50px;
+  }
+}
+
+/* Countdown chip in the vault toolbar */
+.lockChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  white-space: nowrap;
+}
+.lockChipSoon {
+  composes: lockChip;
+  color: #fff;
+  background: #e5484d;
+}
