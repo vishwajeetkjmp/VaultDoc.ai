@@ -1,0 +1,3 @@
+
+# copied from pdfjs-dist by scripts/copy-pdf-worker.js
+/public/pdf.worker.min.mjs

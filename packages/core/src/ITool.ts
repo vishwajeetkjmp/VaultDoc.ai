@@ -24,6 +24,10 @@ export interface ITool {
   route: string;
   /** Optional icon key. */
   icon?: string;
+  /** Sub-group shown in menus, e.g. "PDF tools". */
+  group?: string;
+  /** One-line description for menus and cards. */
+  description?: string;
   /** Optional execution logic (added in later phases). */
   execute?(input: unknown): Promise<ToolResult>;
 }

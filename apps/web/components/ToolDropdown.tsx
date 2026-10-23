@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getFreeTools, isComingSoon } from "../lib/tools";
+import { getToolGroups, isComingSoon } from "../lib/tools";
 import styles from "./navbar.module.css";
 
-/** "Free Tool" menu: opens on hover (desktop), click/tap, or keyboard; closes on Escape or outside click. */
+/** "Free Tool" menu, grouped (PDF tools / Image tools). Opens on hover, click/tap or keyboard. */
 export default function ToolDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const tools = getFreeTools();
+  const groups = getToolGroups();
 
   useEffect(() => {
     if (!open) return;
@@ -24,19 +24,30 @@ export default function ToolDropdown() {
 
   return (
     <div ref={ref} className={styles.dropdown} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button className={styles.dropdownButton} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      {/* Hover already opens it, so a click only opens too (toggling would close it right away) */}
+      <button className={styles.dropdownButton} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(true)}>
         Free Tool
         <svg className={styles.chevron} width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="m3 4.5 3 3 3-3" />
         </svg>
       </button>
       {open && (
-        <div className={styles.dropdownPanel} role="menu">
-          {tools.map((tool) => (
-            <a key={tool.id} href={tool.route} role="menuitem" className={styles.toolItem}>
-              {tool.name}
-              {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
-            </a>
+        <div className={styles.megaPanel} role="menu">
+          {groups.map(([group, tools]) => (
+            <div key={group} className={styles.megaColumn}>
+              <div className={styles.megaHeading}>{group}</div>
+              <div className={tools.length > 4 ? styles.megaGrid : undefined}>
+                {tools.map((tool) => (
+                  <a key={tool.id} href={tool.route} role="menuitem" className={styles.megaItem}>
+                    <span className={styles.megaName}>
+                      {tool.name}
+                      {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
+                    </span>
+                    {tool.description && <span className={styles.megaDesc}>{tool.description}</span>}
+                  </a>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
