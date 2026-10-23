@@ -6,51 +6,80 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 16px;
-  padding: 14px 28px;
+  padding: 14px 40px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
+  font-family: var(--font-sans), -apple-system, "Segoe UI", sans-serif;
 }
+/* Wordmark: serif, like a book title */
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 20px;
-  font-weight: 700;
+  gap: 9px;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
   white-space: nowrap;
 }
+.brandMark {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+/* Menu: light, quiet links that brighten on hover */
 .links {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 28px;
-  font-size: 15px;
-  font-weight: 500;
+  justify-content: flex-end;
+  gap: 32px;
+  padding-right: 18px;
+  font-size: 16px;
+  font-weight: 400;
+}
+.link {
+  color: var(--text-muted);
+  transition: color 0.15s;
 }
 .link:hover {
-  color: var(--primary);
+  color: var(--text);
+}
+.chevron {
+  margin-left: 6px;
+  opacity: 0.75;
+  transition: transform 0.15s;
 }
 .right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 18px;
 }
 .signIn {
-  padding: 8px 14px;
-  font-size: 15px;
+  padding: 8px 0;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.signIn:hover {
+  color: var(--text);
+}
+/* Main button: warm off-white on dark themes, near-black on light (see --cta-* in globals.css) */
+.signUp {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: var(--cta-bg);
+  color: var(--cta-text);
+  font-size: 16px;
   font-weight: 500;
   white-space: nowrap;
-}
-.signUp {
-  padding: 9px 18px;
-  border-radius: 8px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
+  transition: opacity 0.15s;
 }
 .signUp:hover {
-  background: var(--primary-hover);
+  opacity: 0.88;
 }
 .menuButton {
   display: none;
@@ -68,12 +97,21 @@
   position: relative;
 }
 .dropdownButton {
+  display: inline-flex;
+  align-items: center;
   border: 0;
   background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  padding: 8px 0;
+  transition: color 0.15s;
+}
+.dropdownButton:hover,
+.dropdownButton[aria-expanded="true"] {
   color: var(--text);
-  font-size: 15px;
-  font-weight: 500;
-  padding: 8px 4px;
+}
+.dropdownButton[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
 }
 .dropdownPanel {
   position: absolute;
@@ -134,16 +172,61 @@
   font-size: 16px;
   padding: 12px 8px;
 }
+.mobileThemes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 8px 8px;
+}
+.mobileTheme {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+}
+.mobileThemeActive {
+  composes: mobileTheme;
+  border-color: var(--primary);
+  color: var(--text);
+}
+.mobileSwatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid;
+}
 .mobileDivider {
   height: 1px;
   margin: 8px 0;
   background: var(--border);
 }
 
+@media (max-width: 1100px) {
+  .links {
+    gap: 24px;
+  }
+}
 @media (max-width: 900px) {
+  .desktopOnly {
+    display: none;
+  }
   .nav {
     grid-template-columns: 1fr auto;
     padding: 12px 16px;
+  }
+  .brand {
+    font-size: 24px;
+  }
+  .signUp {
+    height: 36px;
+    padding: 0 14px;
+    font-size: 15px;
   }
   .links,
   .signIn {
@@ -152,14 +235,10 @@
   .menuButton {
     display: grid;
   }
-  /* Theme button shows just its icon */
-  .right [data-theme-label] {
-    display: none;
-  }
 }
 @media (max-width: 380px) {
   .brand {
-    font-size: 18px;
+    font-size: 21px;
   }
   .signUp {
     padding: 8px 12px;

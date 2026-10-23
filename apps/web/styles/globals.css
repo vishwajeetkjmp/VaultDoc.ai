@@ -7,28 +7,9 @@
   --primary-hover: #2563eb;
   --border: #1e3a5f;
   --card: #0f1f38;
-}
-
-[data-theme="grey"] {
-  --bg: #2b2b2b;
-  --bg-elevated: #353535;
-  --text: #f0f0f0;
-  --text-muted: #b0b0b0;
-  --primary: #6b7280;
-  --primary-hover: #4b5563;
-  --border: #454545;
-  --card: #353535;
-}
-
-[data-theme="light"] {
-  --bg: #faf9f4;
-  --bg-elevated: #ffffff;
-  --text: #1a1a1a;
-  --text-muted: #5a5a5a;
-  --primary: #d4a017;
-  --primary-hover: #b8860b;
-  --border: #e5e2d8;
-  --card: #ffffff;
+  /* Main call-to-action button: warm off-white on dark themes */
+  --cta-bg: #fbf9f5;
+  --cta-text: #151513;
 }
 
 /* Clay: warm ivory with a terracotta accent */
@@ -41,6 +22,8 @@
   --primary-hover: #b05730;
   --border: #e3dfd3;
   --card: #fdfcf8;
+  --cta-bg: #141413;
+  --cta-text: #fbf9f5;
 }
 
 /* Clay Dark: soft charcoal layers, off-white text, terracotta accent */
@@ -53,16 +36,16 @@
   --primary-hover: #c4633f;
   --border: #2e2e2c;
   --card: #1f1f1f;
+  --cta-bg: #fbf9f5;
+  --cta-text: #151513;
 }
 
 /* Native form controls and scrollbars follow light or dark */
 :root,
 [data-theme="dark"],
-[data-theme="grey"],
 [data-theme="clay-dark"] {
   color-scheme: dark;
 }
-[data-theme="light"],
 [data-theme="clay"] {
   color-scheme: light;
 }

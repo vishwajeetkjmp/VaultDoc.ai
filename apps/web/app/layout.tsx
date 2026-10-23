@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
+import { DM_Sans, Newsreader } from "next/font/google";
 import "../styles/globals.css";
 import { AuthProvider } from "../components/AuthProvider";
 import { THEME_ORDER, THEME_STORAGE_KEY } from "../lib/theme";
+
+// Self-hosted at build time by Next.js (no requests to Google from visitors' browsers)
+const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const serif = Newsreader({ subsets: ["latin"], variable: "--font-serif", display: "swap" });
 
 export const metadata: Metadata = {
   title: "VaultDocAI — Understand every document in seconds",
@@ -20,7 +25,7 @@ export default function RootLayout({
 }) {
   return (
     // suppressHydrationWarning: the script above may change data-theme before React loads
-    <html lang="en" data-theme="dark" suppressHydrationWarning>
+    <html lang="en" data-theme="dark" className={`${sans.variable} ${serif.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: applySavedTheme }} />
       </head>

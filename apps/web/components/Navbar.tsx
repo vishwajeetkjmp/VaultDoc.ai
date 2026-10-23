@@ -6,13 +6,19 @@ import ThemeMenu from "./ThemeMenu";
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "./AuthProvider";
 import { getFreeTools, isComingSoon } from "../lib/tools";
+import { applyTheme, getStoredTheme, ThemeName, THEMES } from "../lib/theme";
 import styles from "./navbar.module.css";
 
 /** Site navbar. Below 900px the middle links move into a menu button so the bar always fits the screen. */
 export default function Navbar() {
   const { user, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemeName>("dark");
   const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (menuOpen) setTheme(getStoredTheme());
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -31,8 +37,8 @@ export default function Navbar() {
 
   return (
     <nav ref={navRef} className={styles.nav}>
-      <a href="/" className={styles.brand}>
-        <span style={{ color: "var(--primary)" }}>🔒</span>
+      <a href="/" className={styles.brand} aria-label="VaultDocAI home">
+        <BrandMark />
         VaultDocAI
       </a>
 
@@ -47,6 +53,9 @@ export default function Navbar() {
       </div>
 
       <div className={styles.right}>
+        <div className={styles.desktopOnly}>
+          <ThemeMenu />
+        </div>
         {/* Hide auth links until Firebase reports whether someone is signed in, to avoid a flash */}
         {!loading && !user && (
           <>
@@ -58,7 +67,6 @@ export default function Navbar() {
             </a>
           </>
         )}
-        <ThemeMenu />
         {user && <ProfileMenu user={user} />}
         <button
           className={styles.menuButton}
@@ -87,6 +95,24 @@ export default function Navbar() {
             About
           </a>
           <div className={styles.mobileDivider} />
+          <div className={styles.mobileHeading}>Theme</div>
+          <div className={styles.mobileThemes}>
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                className={t.id === theme ? styles.mobileThemeActive : styles.mobileTheme}
+                aria-pressed={t.id === theme}
+                onClick={() => {
+                  applyTheme(t.id);
+                  setTheme(t.id);
+                }}
+              >
+                <span className={styles.mobileSwatch} style={{ background: t.bg, borderColor: t.accent }} aria-hidden />
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className={styles.mobileDivider} />
           {user ? (
             <>
               <a href="/dashboard" className={styles.mobileLink}>
@@ -104,5 +130,16 @@ export default function Navbar() {
         </div>
       )}
     </nav>
+  );
+}
+
+/** Small padlock-and-spark mark in the accent colour, shown before the wordmark. */
+function BrandMark() {
+  return (
+    <svg className={styles.brandMark} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="4" y="10.5" width="16" height="11" rx="3" />
+      <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+      <circle cx="12" cy="16" r="1.4" fill="currentColor" />
+    </svg>
   );
 }
