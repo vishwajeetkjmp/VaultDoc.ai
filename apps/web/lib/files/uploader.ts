@@ -60,7 +60,9 @@ async function sha256(data: Blob): Promise<string> {
 
 function explain(e: unknown): string {
   const code = e instanceof FirebaseError ? e.code : "";
-  if (code === "storage/unauthorized" || code === "permission-denied") return "Blocked: over a size or storage limit";
+  // Size, type and quota are checked before uploading, so a refusal here usually means
+  // the limits changed on the server or permissions aren't set up
+  if (code === "storage/unauthorized" || code === "permission-denied") return "Upload refused by the server. Try again shortly";
   if (code === "storage/retry-limit-exceeded" || code === "unavailable") return "Network problem. Try again";
   if (code === "storage/quota-exceeded") return "Storage is full";
   return "Upload failed";
@@ -239,6 +241,7 @@ class UploadQueue {
   private async run(job: Job) {
     const { key, uid } = job;
     let itemId: string | undefined;
+    let step = "preparing"; // reported if something fails, to tell a refused record from a refused upload
     try {
       this.patch(key, { state: "checking", message: undefined });
       job.sha256 = await sha256(job.data);
@@ -248,6 +251,7 @@ class UploadQueue {
         return;
       }
 
+      step = "saving record";
       itemId = newItemId(uid);
       const storagePath = `users/${uid}/files/${itemId}`;
       // The record must exist before the upload finishes; the server checks for it
@@ -266,6 +270,7 @@ class UploadQueue {
       });
       if (job.cancelled) throw new Error("cancelled");
 
+      step = "uploading";
       this.patch(key, { state: "uploading", itemId });
       job.task = uploadBytesResumable(ref(bucket(), storagePath), job.data, { contentType: job.contentType });
       await new Promise<void>((resolve, reject) => {
@@ -279,8 +284,14 @@ class UploadQueue {
       this.patch(key, { state: "done", progress: 1 });
     } catch (e) {
       if (itemId) deleteDoc(doc(itemsCollection(uid), itemId)).catch(() => {});
-      if (job.cancelled) this.patch(key, { state: "cancelled", message: undefined });
-      else this.patch(key, { state: "failed", message: explain(e) });
+      if (job.cancelled) {
+        this.patch(key, { state: "cancelled", message: undefined });
+      } else {
+        const code = e instanceof FirebaseError ? e.code : "unknown";
+        console.error(`[VaultDoc] Upload of "${job.name}" failed while ${step}:`, code, e,
+          (e as { customData?: { serverResponse?: string } })?.customData?.serverResponse ?? "");
+        this.patch(key, { state: "failed", message: `${explain(e)} (${step}: ${code})` });
+      }
     }
   }
 

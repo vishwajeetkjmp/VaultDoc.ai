@@ -8,15 +8,20 @@ import { onDocumentDeleted } from "firebase-functions/v2/firestore";
 initializeApp();
 const db = getFirestore();
 
-// Same region as the Firestore database and Storage bucket (Mumbai)
-setGlobalOptions({ region: "asia-south1", maxInstances: 10 });
+// Same region as the Firestore database and Storage bucket (Delhi)
+setGlobalOptions({ region: "asia-south2", maxInstances: 10 });
 
 const FILE_PATH = /^users\/([^/]+)\/files\/([^/]+)$/;
 
+// Defaults, overridable with the Firestore document config/limits (keep in sync with apps/web/lib/files/limits.ts)
+const DEFAULT_MAX_FILE_BYTES = 20 * 1024 * 1024;
+const DEFAULT_QUOTA_BYTES = 1024 * 1024 * 1024;
+
 /**
- * A file finished uploading: mark its record ready with the real size and
- * add it to the owner's storage total. The app can't write usage itself,
- * so this is the only place the total goes up.
+ * A file finished uploading: check it against the limits, then mark its
+ * record ready with the real size and add it to the owner's storage total.
+ * The app can't write usage itself, so this is the only place the total goes
+ * up, and the quota is enforced here rather than in the Storage rules.
  */
 export const onFileUploaded = onObjectFinalized(async (event) => {
   const match = FILE_PATH.exec(event.data.name);
@@ -26,11 +31,21 @@ export const onFileUploaded = onObjectFinalized(async (event) => {
 
   const itemRef = db.doc(`users/${uid}/items/${itemId}`);
   const userRef = db.doc(`users/${uid}`);
+  const configRef = db.doc("config/limits");
 
   const orphan = await db.runTransaction(async (tx) => {
-    const item = await tx.get(itemRef);
+    const [item, user, config] = await Promise.all([tx.get(itemRef), tx.get(userRef), tx.get(configRef)]);
     if (!item.exists) return true; // record was deleted (e.g. upload cancelled)
     if (item.get("status") === "ready") return false; // already counted (event retried)
+
+    const maxFileBytes = Number(config.get("maxFileBytes")) || DEFAULT_MAX_FILE_BYTES;
+    const quotaBytes = Number(user.get("quotaBytes")) || Number(config.get("quotaBytes")) || DEFAULT_QUOTA_BYTES;
+    const usedBytes = Number(user.get("usedBytes")) || 0;
+    if (size > maxFileBytes || usedBytes + size > quotaBytes) {
+      logger.warn("Upload over limit, removing", { uid, itemId, size, usedBytes, quotaBytes, maxFileBytes });
+      tx.delete(itemRef); // onItemDeleted removes the stored file
+      return false;
+    }
 
     tx.update(itemRef, {
       status: "ready",

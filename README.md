@@ -39,8 +39,8 @@ npm run dev:emulators   # terminal 2
 
 ## My Files: cloud storage setup (one time)
 
-1. In the Firebase console, create **Firestore** and **Storage** in `asia-south1`
-   (Mumbai), in production mode. Storage needs the **Blaze** plan.
+1. In the Firebase console, create **Firestore** and **Storage** in `asia-south2`
+   (Delhi), in production mode. Storage needs the **Blaze** plan.
 2. Deploy the security rules and functions:
    ```bash
    npx firebase login
