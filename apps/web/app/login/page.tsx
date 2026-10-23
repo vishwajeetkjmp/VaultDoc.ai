@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "../../components/AuthProvider";
+import { nextFromUrl } from "../../lib/nav";
 import AuthShell, { GoogleButton } from "../../components/auth/AuthShell";
 import styles from "../../components/auth/auth.module.css";
 import { signIn, signInWithGoogle } from "../../lib/auth";
 
-export default function SignInPage() {
+export default function LoginPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  // Once logged in (or if already logged in), go back to the page they came from (home by default)
+  useEffect(() => {
+    if (!authLoading && user) router.replace(nextFromUrl("/"));
+  }, [authLoading, user, router]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +49,6 @@ export default function SignInPage() {
     setLoading(true);
     try {
       await signIn(email, password);
-      router.push("/dashboard");
     } catch (err: any) {
       setError(mapError(err?.code ?? ""));
     } finally {
@@ -54,7 +61,6 @@ export default function SignInPage() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      router.push("/dashboard");
     } catch (err: any) {
       setError(mapError(err?.code ?? ""));
     } finally {
@@ -63,7 +69,7 @@ export default function SignInPage() {
   }
 
   return (
-    <AuthShell active="signin">
+    <AuthShell active="login">
       <form onSubmit={handleSubmit}>
         <label className={styles.label} htmlFor="email">
           Email address
@@ -107,7 +113,7 @@ export default function SignInPage() {
         {error && <p className={styles.error}>{error}</p>}
 
         <button type="submit" disabled={loading} className={styles.primaryButton}>
-          {loading ? "Signing in..." : "Sign in"}
+          {loading ? "Logging in…" : "Log in"}
         </button>
       </form>
 

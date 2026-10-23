@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import SitePage from "../../components/SitePage";
 import styles from "../../components/site.module.css";
@@ -21,9 +22,9 @@ export default function TermsPage() {
         <p>
           These terms are an agreement between you and <b>[legal entity name]</b> (&quot;we&quot;) for your use of
           VaultDocAI. By creating an account you agree to them and to our{" "}
-          <a href="/privacy" style={{ color: "var(--primary)" }}>
+          <Link href="/privacy" style={{ color: "var(--primary)" }}>
             Privacy Policy
-          </a>
+          </Link>
           .
         </p>
 

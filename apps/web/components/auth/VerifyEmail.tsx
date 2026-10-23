@@ -83,7 +83,7 @@ export default function VerifyEmail({ user }: { user: User }) {
           onClick={() => signOutUser().then(() => (window.location.href = "/"))}
           style={{ border: 0, background: "none", padding: 0 }}
         >
-          Sign out
+          Log out
         </button>
       </p>
     </AuthShell>

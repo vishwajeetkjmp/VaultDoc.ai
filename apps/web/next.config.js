@@ -3,6 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   // Allow importing the shared @vaultdocai/core TypeScript package
   transpilePackages: ["@vaultdocai/core"],
+  // The login page used to live at /signin; keep old links and emails working
+  async redirects() {
+    return [{ source: "/signin", destination: "/login", permanent: true }];
+  },
   webpack: (config) => {
     // pdf.js has an optional Node-only "canvas" dependency the browser build never uses
     config.resolve.alias.canvas = false;

@@ -26,6 +26,8 @@ export type ToolPage = ToolKind & {
   related: string[];
   /** Runs fully in the browser (shown as a privacy promise) */
   local: boolean;
+  /** Only logged-in users with a verified email can use it (server tools cost money to run) */
+  loginRequired?: boolean;
 };
 
 const IMAGE_ACCEPT = ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
@@ -88,17 +90,19 @@ const office = (fmt: string, ext: string): ToolPage => ({
   subheading: `Convert ${fmt} documents to PDF with layout, fonts and tables preserved.`,
   seoTitle: `${fmt} to PDF converter: keeps formatting | VaultDocAI`,
   seoDescription: `Convert ${ext} to PDF free. Keeps fonts, tables, headers and page breaks. Files are deleted right after conversion.`,
-  steps: [`Add your ${ext} file`, "We convert it securely", "Download your PDF"],
+  steps: ["Log in to your free account", `Add your ${ext} file`, "Download your PDF"],
   faq: [
     {
       q: "What happens to my document?",
       a: "It's sent over an encrypted connection to our converter in India, turned into a PDF, and deleted immediately. We don't store or read it.",
     },
     { q: "Will the formatting match Word?", a: "Very closely. Unusual fonts may be replaced with similar ones if they aren't embedded in the document." },
-    { q: "Is there a size limit?", a: "Files up to 20 MB, and a few conversions per hour per visitor to keep the service fast for everyone." },
+    { q: "Why do I need to log in?", a: "This tool runs on our server, so it's available with a free VaultDoc account. Creating one takes a minute and needs no card." },
+    { q: "Is there a size limit?", a: "Files up to 20 MB, and a few conversions per hour per account to keep the service fast for everyone." },
   ],
   related: ["merge-pdf", "jpg-to-pdf", "remove-pdf-pages"],
   local: false,
+  loginRequired: true,
 });
 
 export const TOOL_PAGES: Record<string, ToolPage> = {

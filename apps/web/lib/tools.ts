@@ -24,6 +24,11 @@ export function getTool(id: string): ITool | undefined {
   return defaultToolRegistry.get(id);
 }
 
+/** Tools that need a logged-in, verified account (Word and DOC to PDF, which run on a server). */
+export function needsLogin(tool: ITool): boolean {
+  return !!TOOL_PAGES[tool.id]?.loginRequired;
+}
+
 /** A tool is live once the web app has a page for it (see toolPages.ts). */
 export function isComingSoon(tool: ITool): boolean {
   return !TOOL_PAGES[tool.id];

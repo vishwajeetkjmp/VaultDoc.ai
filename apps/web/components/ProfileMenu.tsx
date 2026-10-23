@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -66,24 +67,24 @@ export default function ProfileMenu({ user }: { user: User }) {
           {user.displayName && <div style={styles.fullName}>{name}</div>}
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-            <a href="/dashboard" style={styles.manageBtn} onClick={() => setOpen(false)}>
-              My Files
-            </a>
-            <a href="/vault" style={styles.manageBtn} onClick={() => setOpen(false)}>
+            <Link href="/dashboard" style={styles.manageBtn} onClick={() => setOpen(false)}>
+              My Space
+            </Link>
+            <Link href="/vault" style={styles.manageBtn} onClick={() => setOpen(false)}>
               🔐 Secure Vault
-            </a>
+            </Link>
           </div>
 
           <div style={styles.storage}>
             <StorageMeter uid={user.uid} />
           </div>
 
-          <a href="/account" style={styles.accountLink} onClick={() => setOpen(false)}>
+          <Link href="/account" style={styles.accountLink} onClick={() => setOpen(false)}>
             Manage account
-          </a>
+          </Link>
 
           <button onClick={handleSignOut} style={styles.signOutBtn}>
-            Sign out
+            Log out
           </button>
         </div>
       )}

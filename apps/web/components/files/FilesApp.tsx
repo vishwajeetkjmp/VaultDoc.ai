@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { User } from "firebase/auth";
 import ProfileMenu from "../ProfileMenu";
+import SiteLinks from "../SiteLinks";
 import ThemeMenu from "../ThemeMenu";
 import { ACCEPT, SUPPORTED_LABEL } from "../../lib/files/fileTypes";
 import { formatBytes } from "../../lib/files/format";
@@ -72,7 +74,7 @@ export default function FilesApp({ user }: { user: User }) {
 
   const current = chain[chain.length - 1];
   const folder: FolderRef = folderId === ROOT_ID || !current ? ROOT_FOLDER : { id: current.id, ancestorIds: current.ancestorIds };
-  const folderName = folderId === ROOT_ID ? "My Files" : current?.name ?? "";
+  const folderName = folderId === ROOT_ID ? "My Space" : current?.name ?? "";
 
   const showToast = useCallback((message: string) => setToast(message), []);
   useEffect(() => {
@@ -250,10 +252,10 @@ export default function FilesApp({ user }: { user: User }) {
   return (
     <div className={styles.app}>
       <header className={styles.topbar}>
-        <a href="/" className={styles.brand}>
+        <Link href="/" className={styles.brand}>
           <span className={styles.brandMark}>🔒</span>
           <span className={styles.brandName}>VaultDocAI</span>
-        </a>
+        </Link>
         <label className={styles.search}>
           <SearchIcon size={18} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
           <input
@@ -265,6 +267,7 @@ export default function FilesApp({ user }: { user: User }) {
           />
         </label>
         <div className={styles.topRight}>
+          <SiteLinks />
           <span className={styles.hideOnMobile}>
             <ThemeMenu />
           </span>
@@ -280,12 +283,12 @@ export default function FilesApp({ user }: { user: User }) {
           </button>
           <button className={styles.navItem} onClick={() => goTo(null)} style={{ border: 0, textAlign: "left" }}>
             <HomeIcon size={18} />
-            My Files
+            My Space
           </button>
-          <a href="/vault" className={styles.navItem} style={{ background: "transparent" }}>
+          <Link href="/vault" className={styles.navItem} style={{ background: "transparent" }}>
             <span aria-hidden>🔐</span>
             Secure Vault
-          </a>
+          </Link>
           <div className={styles.sidebarFooter}>
             <StorageMeter uid={uid} />
             <div className={styles.meterText} style={{ marginTop: 4 }}>
@@ -298,11 +301,11 @@ export default function FilesApp({ user }: { user: User }) {
           <div className={styles.toolbar}>
             <nav className={styles.crumbs} aria-label="Folder path">
               {folderId === ROOT_ID ? (
-                <span className={styles.crumbCurrent}>My Files</span>
+                <span className={styles.crumbCurrent}>My Space</span>
               ) : (
                 <>
                   <button className={styles.crumb} onClick={() => goTo(null)}>
-                    My Files
+                    My Space
                   </button>
                   {chain.map((f, i) => (
                     <Fragment key={f.id}>

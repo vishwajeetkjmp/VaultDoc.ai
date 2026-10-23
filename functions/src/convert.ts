@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { defineString } from "firebase-functions/params";
 import { logger } from "firebase-functions/v2";
@@ -8,8 +9,9 @@ import { GoogleAuth } from "google-auth-library";
 /**
  * Word (.docx / .doc) → PDF for the free tools.
  *
- * The browser POSTs the file; this function checks it, rate-limits the
- * visitor, and passes it to a private Gotenberg (LibreOffice) service on
+ * Only for logged-in users with a verified email (the browser sends their
+ * Firebase ID token). The browser POSTs the file; this function checks it,
+ * rate-limits the account, and passes it to a private Gotenberg (LibreOffice) service on
  * Cloud Run, which only this function can call. The document is held in
  * memory only and never stored.
  */
@@ -30,10 +32,10 @@ const looksLikeDoc = (b: Buffer) => b.length > 8 && b.readUInt32BE(0) === 0xd0cf
 
 const auth = new GoogleAuth();
 
-/** Allows PER_HOUR conversions per visitor per hour. Visitors are identified by a hash, never the raw IP. */
-async function withinLimit(ip: string): Promise<boolean> {
+/** Allows PER_HOUR conversions per account per hour. Accounts are stored as a hash, not the raw user id. */
+async function withinLimit(uid: string): Promise<boolean> {
   const hour = Math.floor(Date.now() / 3_600_000);
-  const key = createHash("sha256").update(`vaultdoc-convert:${ip}`).digest("hex").slice(0, 32);
+  const key = createHash("sha256").update(`vaultdoc-convert:${uid}`).digest("hex").slice(0, 32);
   const ref = getFirestore().doc(`toolRateLimits/${key}_${hour}`);
   return getFirestore().runTransaction(async (tx) => {
     const count = Number((await tx.get(ref)).get("count")) || 0;
@@ -55,6 +57,16 @@ export const convertDocument = onRequest(
       res.status(405).json({ error: "Use POST." });
       return;
     }
+    const token = String(req.headers.authorization ?? "").match(/^Bearer (.+)$/)?.[1];
+    const user = token ? await getAuth().verifyIdToken(token).catch(() => null) : null;
+    if (!user) {
+      res.status(401).json({ error: "Please log in to use this tool." });
+      return;
+    }
+    if (!user.email_verified) {
+      res.status(403).json({ error: "Please verify your email to use this tool." });
+      return;
+    }
     const body = req.rawBody;
     if (!body?.length) {
       res.status(400).json({ error: "No file received." });
@@ -70,8 +82,7 @@ export const convertDocument = onRequest(
       return;
     }
 
-    const ip = String(req.headers["x-forwarded-for"] ?? req.ip ?? "unknown").split(",")[0].trim();
-    if (!(await withinLimit(ip))) {
+    if (!(await withinLimit(user.uid))) {
       res.status(429).json({ error: `You've reached ${PER_HOUR} conversions this hour. Please try again later.` });
       return;
     }

@@ -36,8 +36,20 @@
   padding: 6px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--card);
+  /* See-through glass, so the page shows faintly behind the menu */
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+}
+/* Invisible bridge over the gap above the panel, so moving the mouse down doesn't close it */
+.panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
 }
 .heading {
   padding: 8px 10px 6px;
