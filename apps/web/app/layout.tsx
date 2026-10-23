@@ -6,7 +6,15 @@ import { THEME_ORDER, THEME_STORAGE_KEY } from "../lib/theme";
 
 // Self-hosted at build time by Next.js (no requests to Google from visitors' browsers)
 const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const serif = Newsreader({ subsets: ["latin"], variable: "--font-serif", display: "swap" });
+// Next.js has no size metrics for Newsreader, so skip its automatic fallback sizing
+// (the CSS falls back to Georgia while the font loads)
+const serif = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+  adjustFontFallback: false,
+  fallback: ["Georgia", "serif"],
+});
 
 export const metadata: Metadata = {
   title: "VaultDocAI — Understand every document in seconds",
