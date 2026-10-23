@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Files live at users/{uid}/files/{itemId}.
+// These rules only check what they can decide on their own (owner, size cap,
+// file type). The per-user quota and any lower limits from config/limits are
+// enforced by the onFileUploaded Cloud Function, which deletes uploads that
+// break them. Keep MAX_FILE_BYTES and the allowed types in sync with
+// apps/web/lib/files/limits.ts and fileTypes.ts.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Hard ceiling per file (20 MB). config/limits can only lower it.
+    function maxFileBytes() {
+      return 20 * 1024 * 1024;
+    }
+
+    function allowedType(contentType) {
+      return contentType.matches(
+        'application/pdf'
+        + '|application/msword'
+        + '|application/vnd\\.openxmlformats-officedocument\\.(wordprocessingml\\.document|spreadsheetml\\.sheet|presentationml\\.presentation)'
+        + '|application/vnd\\.ms-excel'
+        + '|application/vnd\\.ms-powerpoint'
+        + '|application/rtf'
+        + '|application/json'
+        + '|text/(plain|csv|markdown)'
+        + '|image/(png|jpeg|webp|gif)'
+      );
+    }
+
+    match /users/{uid}/files/{itemId} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.size <= maxFileBytes()
+        && allowedType(request.resource.contentType);
+
+      // Files are never overwritten in place; deletes go through Firestore + Cloud Functions
+      allow update, delete: if false;
+    }
+  }
+}

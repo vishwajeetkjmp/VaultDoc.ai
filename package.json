@@ -2,7 +2,7 @@
   "name": "vaultdocai",
   "private": true,
   "version": "0.1.0",
-  "description": "VaultDocAI — AI document intelligence. Understand every document in seconds.",
+  "description": "VaultDocAI \u2014 AI document intelligence. Understand every document in seconds.",
   "workspaces": [
     "apps/web",
     "packages/core"
@@ -10,6 +10,13 @@
   "scripts": {
     "dev": "npm --workspace @vaultdocai/web run dev",
     "build": "npm --workspace @vaultdocai/web run build",
-    "start": "npm --workspace @vaultdocai/web run start"
+    "start": "npm --workspace @vaultdocai/web run start",
+    "dev:emulators": "NEXT_PUBLIC_FIREBASE_EMULATORS=true npm --workspace @vaultdocai/web run dev",
+    "emulators": "npm --prefix functions run build && firebase emulators:start --project demo-vaultdoc",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage",
+    "deploy:functions": "firebase deploy --only functions"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.34.1"
   }
 }

@@ -1,0 +1,77 @@
+rules_version = '2';
+
+// Data layout
+//   config/limits                   { maxFileBytes, quotaBytes }        — edited by admins in the console
+//   users/{uid}                     { usedBytes, fileCount, quotaBytes? } — usage is written only by Cloud Functions
+//   users/{uid}/items/{itemId}      a file or folder in the user's tree
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /config/{doc} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      // The app creates an empty usage record on first visit; only Cloud Functions change it afterwards
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['usedBytes', 'fileCount', 'createdAt'])
+        && request.resource.data.usedBytes == 0
+        && request.resource.data.fileCount == 0;
+      allow update, delete: if false;
+
+      // Internal bookkeeping for Cloud Functions
+      match /_events/{eventId} {
+        allow read, write: if false;
+      }
+
+      match /items/{itemId} {
+        function validName(name) {
+          return name is string && name.size() > 0 && name.size() <= 255 && !name.matches('.*[/\\\\].*');
+        }
+
+        function validPlacement(data) {
+          return data.parentId is string
+            && data.ancestorIds is list
+            && data.ancestorIds.size() <= 32;
+        }
+
+        allow read: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && validName(request.resource.data.name)
+          && request.resource.data.nameLower == request.resource.data.name.lower()
+          && validPlacement(request.resource.data)
+          && (
+            // Folders are ready straight away
+            (request.resource.data.kind == 'folder'
+              && request.resource.data.status == 'ready')
+            ||
+            // Files start as 'uploading'; a Cloud Function marks them 'ready' with the real size
+            (request.resource.data.kind == 'file'
+              && request.resource.data.status == 'uploading'
+              && request.resource.data.size is int
+              && request.resource.data.storagePath == 'users/' + uid + '/files/' + itemId)
+          );
+
+        // Rename only. Kind, size, status and storage location can't be changed by the app.
+        allow update: if isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'nameLower', 'updatedAt'])
+          && validName(request.resource.data.name)
+          && request.resource.data.nameLower == request.resource.data.name.lower();
+
+        // Deleting a file record also deletes the stored file (Cloud Function)
+        allow delete: if isOwner(uid);
+      }
+    }
+  }
+}
