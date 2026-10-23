@@ -11,7 +11,10 @@ const db = getFirestore();
 // Same region as the Firestore database and Storage bucket (Delhi)
 setGlobalOptions({ region: "asia-south2", maxInstances: 10 });
 
-const FILE_PATH = /^users\/([^/]+)\/files\/([^/]+)$/;
+// My Files: users/{uid}/files/{id} ↔ items/{id}. Secure Vault (encrypted): users/{uid}/vault/{id} ↔ vaultItems/{id}
+const FILE_PATH = /^users\/([^/]+)\/(files|vault)\/([^/]+)$/;
+// Encrypted vault files are slightly larger than the original (IV + tag)
+const VAULT_OVERHEAD_BYTES = 1024;
 
 // Defaults, overridable with the Firestore document config/limits (keep in sync with apps/web/lib/files/limits.ts)
 const DEFAULT_MAX_FILE_BYTES = 20 * 1024 * 1024;
@@ -26,10 +29,11 @@ const DEFAULT_QUOTA_BYTES = 1024 * 1024 * 1024;
 export const onFileUploaded = onObjectFinalized(async (event) => {
   const match = FILE_PATH.exec(event.data.name);
   if (!match) return;
-  const [, uid, itemId] = match;
+  const [, uid, area, itemId] = match;
+  const isVault = area === "vault";
   const size = Number(event.data.size);
 
-  const itemRef = db.doc(`users/${uid}/items/${itemId}`);
+  const itemRef = db.doc(`users/${uid}/${isVault ? "vaultItems" : "items"}/${itemId}`);
   const userRef = db.doc(`users/${uid}`);
   const configRef = db.doc("config/limits");
 
@@ -38,19 +42,21 @@ export const onFileUploaded = onObjectFinalized(async (event) => {
     if (!item.exists) return true; // record was deleted (e.g. upload cancelled)
     if (item.get("status") === "ready") return false; // already counted (event retried)
 
-    const maxFileBytes = Number(config.get("maxFileBytes")) || DEFAULT_MAX_FILE_BYTES;
+    const maxFileBytes =
+      (Number(config.get("maxFileBytes")) || DEFAULT_MAX_FILE_BYTES) + (isVault ? VAULT_OVERHEAD_BYTES : 0);
     const quotaBytes = Number(user.get("quotaBytes")) || Number(config.get("quotaBytes")) || DEFAULT_QUOTA_BYTES;
     const usedBytes = Number(user.get("usedBytes")) || 0;
     if (size > maxFileBytes || usedBytes + size > quotaBytes) {
       logger.warn("Upload over limit, removing", { uid, itemId, size, usedBytes, quotaBytes, maxFileBytes });
-      tx.delete(itemRef); // onItemDeleted removes the stored file
+      tx.delete(itemRef); // the deletion trigger removes the stored file
       return false;
     }
 
     tx.update(itemRef, {
       status: "ready",
       size,
-      contentType: event.data.contentType ?? null,
+      // Vault records keep their (encrypted) type; the stored type is always octet-stream
+      ...(isVault ? {} : { contentType: event.data.contentType ?? null }),
       updatedAt: FieldValue.serverTimestamp(),
     });
     tx.set(
@@ -72,10 +78,8 @@ export const onFileUploaded = onObjectFinalized(async (event) => {
  * owner's total. Deletion events can be delivered more than once, so each
  * event id is recorded to avoid subtracting twice.
  */
-export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", async (event) => {
-  const data = event.data?.data();
+async function cleanUpDeletedFile(uid: string, eventId: string, data: FirebaseFirestore.DocumentData | undefined) {
   if (!data || data.kind !== "file") return;
-  const { uid } = event.params;
 
   if (typeof data.storagePath === "string") {
     await getStorage().bucket().file(data.storagePath).delete({ ignoreNotFound: true });
@@ -84,7 +88,7 @@ export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", asy
   if (data.status !== "ready") return; // never counted
   const size = Number(data.size) || 0;
   const userRef = db.doc(`users/${uid}`);
-  const eventRef = db.doc(`users/${uid}/_events/${event.id}`);
+  const eventRef = db.doc(`users/${uid}/_events/${eventId}`);
 
   await db.runTransaction(async (tx) => {
     if ((await tx.get(eventRef)).exists) return;
@@ -95,4 +99,12 @@ export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", asy
       { merge: true },
     );
   });
-});
+}
+
+export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", (event) =>
+  cleanUpDeletedFile(event.params.uid, event.id, event.data?.data()),
+);
+
+export const onVaultItemDeleted = onDocumentDeleted("users/{uid}/vaultItems/{itemId}", (event) =>
+  cleanUpDeletedFile(event.params.uid, event.id, event.data?.data()),
+);

@@ -68,6 +68,22 @@ A single user's quota can be raised with `quotaBytes` on `users/{uid}`.
 - "Free Tool" dropdown rendered from an extensible tool registry (SOLID)
 - Sign In / Sign Up placeholder routes
 
+## Secure Vault (end-to-end encrypted)
+
+A separate area (`/vault`) for highly sensitive documents. Files, names and types
+are encrypted **in the browser** (AES-256-GCM, Web Crypto) before upload, so the
+server, and anyone with Firebase console access, only ever sees ciphertext.
+
+- **Recovery key** (shown once at setup) wraps the vault key; needed on a new device.
+  If the recovery key and every set-up device are lost, the vault can't be opened by anyone.
+- **6-digit PIN** unlocks the vault on a device (the vault key is stored there wrapped
+  by a non-extractable device key). 5 wrong PINs → 15-minute pause; 10 → recovery key required.
+- **Auto-lock** after 60 s without activity; **new PIN every 6 days** (current PIN required).
+- **Forgot PIN:** an email link confirms the account and allows a new PIN on a device
+  that's already set up. Enable *Email link (passwordless sign-in)* in Firebase
+  Authentication for this to work.
+- Server-side AI features can't read vault files, by design.
+
 ## Features (Phase 3)
 
 - My Files: folders, upload (button or drag and drop), rename, delete, open, download
