@@ -112,13 +112,45 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   height: 40px;
   padding: 0 14px;
+  border: 0;
   border-radius: 999px;
+  font: inherit;
   font-size: 14px;
   font-weight: 600;
+  text-align: left;
   color: var(--text);
   background: var(--selected);
+  cursor: pointer;
+}
+/* Sidebar entry that isn't the current view */
+.navLink {
+  composes: navItem;
+  font-weight: 500;
+  background: transparent;
+  transition: background 0.12s;
+}
+.navLink:hover {
+  background: var(--hover);
+}
+.navCount {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  background: var(--hover);
+  color: var(--text-muted);
+}
+.sharedMark {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-muted);
 }
 .sidebarFooter {
   margin-top: auto;
@@ -629,7 +661,42 @@
 .fab {
   display: none;
 }
+.mobileTabs {
+  display: none;
+}
 @media (max-width: 760px) {
+  /* My Space only: top bar, section tabs, content (the vault page has no tabs) */
+  .withTabs {
+    grid-template-rows: 64px auto 1fr;
+  }
+  .mobileTabs {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+  .mobileTabs button,
+  .mobileTabs a {
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+  }
+  .mobileTabs [aria-current="page"] {
+    background: var(--selected);
+    border-color: transparent;
+    font-weight: 600;
+  }
   .topbar {
     grid-template-columns: auto 1fr auto;
     gap: 10px;

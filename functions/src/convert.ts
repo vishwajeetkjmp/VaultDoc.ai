@@ -1,3 +1,4 @@
+import "./setup";
 import { createHash } from "node:crypto";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
@@ -5,6 +6,7 @@ import { defineString } from "firebase-functions/params";
 import { logger } from "firebase-functions/v2";
 import { onRequest } from "firebase-functions/v2/https";
 import { GoogleAuth } from "google-auth-library";
+import { bumpDaily } from "./stats";
 
 /**
  * Word (.docx / .doc) → PDF for the free tools.
@@ -32,6 +34,40 @@ const looksLikeDoc = (b: Buffer) => b.length > 8 && b.readUInt32BE(0) === 0xd0cf
 
 const auth = new GoogleAuth();
 
+/** Calls the converter, with a Google identity token when it's the private Cloud Run service. */
+async function converterFetch(path: string, init: RequestInit = {}) {
+  const url = GOTENBERG_URL.value().replace(/\/$/, "");
+  const headers: Record<string, string> = url.startsWith("https://")
+    ? Object.fromEntries((await (await auth.getIdTokenClient(url)).getRequestHeaders()).entries())
+    : {};
+  return fetch(`${url}${path}`, { ...init, headers: { ...headers, ...(init.headers as Record<string, string>) } });
+}
+
+/** For the admin System page: is the converter up, and how fast does it answer? */
+export async function converterHealth(): Promise<{ ok: boolean; ms: number; detail?: string }> {
+  const started = Date.now();
+  try {
+    const res = await converterFetch("/health", { signal: AbortSignal.timeout(15_000) });
+    return { ok: res.ok, ms: Date.now() - started, detail: res.ok ? undefined : `HTTP ${res.status}` };
+  } catch (e) {
+    return { ok: false, ms: Date.now() - started, detail: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+export const RATE_LIMIT_PER_HOUR = PER_HOUR;
+/** Clears this hour's conversion count for one user (admin "reset limit"). */
+export async function resetConvertLimit(uid: string) {
+  const hour = Math.floor(Date.now() / 3_600_000);
+  const key = createHash("sha256").update(`vaultdoc-convert:${uid}`).digest("hex").slice(0, 32);
+  await getFirestore().doc(`toolRateLimits/${key}_${hour}`).delete();
+}
+/** This hour's conversions for one user. */
+export async function convertUsage(uid: string): Promise<number> {
+  const hour = Math.floor(Date.now() / 3_600_000);
+  const key = createHash("sha256").update(`vaultdoc-convert:${uid}`).digest("hex").slice(0, 32);
+  return Number((await getFirestore().doc(`toolRateLimits/${key}_${hour}`).get()).get("count")) || 0;
+}
+
 /** Allows PER_HOUR conversions per account per hour. Accounts are stored as a hash, not the raw user id. */
 async function withinLimit(uid: string): Promise<boolean> {
   const hour = Math.floor(Date.now() / 3_600_000);
@@ -42,8 +78,8 @@ async function withinLimit(uid: string): Promise<boolean> {
     if (count >= PER_HOUR) return false;
     tx.set(
       ref,
-      // expireAt lets a Firestore TTL policy clean these up automatically
-      { count: FieldValue.increment(1), expireAt: Timestamp.fromMillis((hour + 2) * 3_600_000) },
+      // expireAt lets a Firestore TTL policy clean these up automatically; uid lets admins spot abuse
+      { count: FieldValue.increment(1), expireAt: Timestamp.fromMillis((hour + 2) * 3_600_000), uid, kind: "convert" },
       { merge: true },
     );
     return true;
@@ -93,20 +129,16 @@ export const convertDocument = onRequest(
     const fileName = `${base}.${isDocx ? "docx" : "doc"}`;
 
     try {
-      const url = GOTENBERG_URL.value().replace(/\/$/, "");
       const form = new FormData();
       form.append("files", new Blob([body]), fileName);
-      // Cloud Run requires a Google-signed identity token; local Docker doesn't
-      const headers: Record<string, string> = url.startsWith("https://")
-        ? Object.fromEntries((await (await auth.getIdTokenClient(url)).getRequestHeaders()).entries())
-        : {};
-      const out = await fetch(`${url}/forms/libreoffice/convert`, { method: "POST", body: form, headers });
+      const out = await converterFetch("/forms/libreoffice/convert", { method: "POST", body: form });
       if (!out.ok) {
         logger.warn("Converter error", { status: out.status, body: (await out.text()).slice(0, 300) });
         res.status(502).json({ error: "This document couldn't be converted. It may be damaged or password-protected." });
         return;
       }
       const pdf = Buffer.from(await out.arrayBuffer());
+      await bumpDaily({ conversions: 1 });
       res.set("Content-Type", "application/pdf");
       res.set("Content-Disposition", `attachment; filename="${base}.pdf"`);
       res.set("Cache-Control", "no-store");

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { User } from "firebase/auth";
@@ -15,8 +16,10 @@ import {
   deleteItems,
   FolderRef,
   getFolderChain,
+  fileBytes,
   getItem,
   Item,
+  listFolderTree,
   listenFolder,
   openFile,
   renameItem,
@@ -25,6 +28,8 @@ import {
   uniqueName,
 } from "../../lib/files/items";
 import { useStorageAccount } from "../../lib/files/limits";
+import { listenMyShares } from "../../lib/files/myShares";
+import type { MyShare } from "../../lib/files/shares";
 import { uploadQueue, usePendingItemIds } from "../../lib/files/uploader";
 import FileList, { EmptyFolder } from "./FileList";
 import styles from "./files.module.css";
@@ -33,19 +38,30 @@ import {
   DownloadIcon,
   FolderPlusIcon,
   HomeIcon,
+  InboxIcon,
   OpenIcon,
   PencilIcon,
   PlusIcon,
   SearchIcon,
+  ShareIcon,
   TrashIcon,
   UploadIcon,
+  ZipIcon,
 } from "./icons";
 import { ConfirmDialog, Menu, MenuAction, NameDialog } from "./Popups";
 import StorageMeter from "./StorageMeter";
 import UploadPanel from "./UploadPanel";
 
+// Sharing UI is only downloaded when someone opens it, so My Space stays as fast as before
+const ShareDialog = dynamic(() => import("./ShareDialog"), { ssr: false });
+const SharedByMe = dynamic(() => import("./SharedViews").then((m) => m.SharedByMe), { ssr: false });
+const SharedWithMeList = dynamic(() => import("./SharedViews").then((m) => m.SharedWithMeList), { ssr: false });
+
+type View = "files" | "shared" | "with-me";
+
 type DialogState =
   | { type: "newFolder" }
+  | { type: "share"; item: Item }
   | { type: "rename"; item: Item }
   | { type: "delete"; item: Item }
   | null;
@@ -54,7 +70,10 @@ export default function FilesApp({ user }: { user: User }) {
   const uid = user.uid;
   const router = useRouter();
   const pathname = usePathname();
-  const folderId = useSearchParams().get("folder") ?? ROOT_ID;
+  const params = useSearchParams();
+  const folderId = params.get("folder") ?? ROOT_ID;
+  const viewParam = params.get("view");
+  const view: View = viewParam === "shared" || viewParam === "with-me" ? viewParam : "files";
 
   const account = useStorageAccount(uid);
   const accountRef = useRef(account);
@@ -71,6 +90,9 @@ export default function FilesApp({ user }: { user: User }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const dragDepth = useRef(0);
   const pendingIds = usePendingItemIds();
+  const [myShares, setMyShares] = useState<MyShare[]>([]);
+  const [sharesLoading, setSharesLoading] = useState(true);
+  const [zipProgress, setZipProgress] = useState<{ name: string; percent: number } | null>(null);
 
   const current = chain[chain.length - 1];
   const folder: FolderRef = folderId === ROOT_ID || !current ? ROOT_FOLDER : { id: current.id, ancestorIds: current.ancestorIds };
@@ -123,6 +145,21 @@ export default function FilesApp({ user }: { user: User }) {
     };
   }, [uid, folderId, pathname, router]);
 
+  // The user's shares: powers "Shared by me" and the shared icon on rows (one small listener)
+  useEffect(
+    () =>
+      listenMyShares(
+        uid,
+        (list) => {
+          setMyShares(list);
+          setSharesLoading(false);
+        },
+        () => setSharesLoading(false),
+      ),
+    [uid],
+  );
+  const sharedIds = useMemo(() => new Set(myShares.map((s) => s.itemId)), [myShares]);
+
   // Warn before closing the tab mid-upload
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
@@ -149,6 +186,28 @@ export default function FilesApp({ user }: { user: User }) {
       router.push(target ? `${pathname}?folder=${target.id}` : pathname);
     },
     [pathname, router],
+  );
+
+  const showView = (v: View) => router.push(v === "files" ? pathname : `${pathname}?view=${v}`);
+
+  const downloadZip = useCallback(
+    async (folder: Item) => {
+      setZipProgress({ name: folder.name, percent: 0 });
+      try {
+        const [{ downloadZip: build, zipPaths }, inside] = await Promise.all([import("../../lib/files/zipDownload"), listFolderTree(uid, folder.id)]);
+        const entries = zipPaths(folder.id, inside).map(({ item, path }) => ({ path, size: item.size, load: () => fileBytes(item) }));
+        if (!entries.length) {
+          showToast(`“${folder.name}” has no files to download`);
+          return;
+        }
+        await build(folder.name, entries, (done, total) => setZipProgress({ name: folder.name, percent: total ? Math.round((done / total) * 100) : 100 }));
+      } catch (e) {
+        showToast(e instanceof Error && e.message.includes("too big") ? e.message : `Couldn't download “${folder.name}”`);
+      } finally {
+        setZipProgress(null);
+      }
+    },
+    [uid, showToast],
   );
 
   const visible = useMemo(() => {
@@ -191,15 +250,18 @@ export default function FilesApp({ user }: { user: User }) {
           icon: <DownloadIcon size={18} />,
           onSelect: () => openFile(item, "download").catch(() => showToast(`Couldn't download “${item.name}”`)),
         });
+      } else {
+        actions.push({ label: "Download as ZIP", icon: <ZipIcon size={18} />, onSelect: () => downloadZip(item) });
       }
       actions.push(
+        { label: sharedIds.has(item.id) ? "Sharing settings" : "Share", icon: <ShareIcon size={18} />, onSelect: () => setDialog({ type: "share", item }) },
         { label: "Rename", icon: <PencilIcon size={18} />, onSelect: () => setDialog({ type: "rename", item }) },
         "divider",
         { label: "Delete", icon: <TrashIcon size={18} />, danger: true, onSelect: () => setDialog({ type: "delete", item }) },
       );
       setMenu({ x, y, actions });
     },
-    [open, showToast],
+    [open, showToast, downloadZip, sharedIds],
   );
 
   const showNewMenu = (e: React.MouseEvent<HTMLElement>) => {
@@ -250,7 +312,7 @@ export default function FilesApp({ user }: { user: User }) {
   };
 
   return (
-    <div className={styles.app}>
+    <div className={`${styles.app} ${styles.withTabs}`}>
       <header className={styles.topbar}>
         <Link href="/" className={styles.brand}>
           <span className={styles.brandMark}>🔒</span>
@@ -275,17 +337,40 @@ export default function FilesApp({ user }: { user: User }) {
         </div>
       </header>
 
+      {/* Phones have no sidebar: the same places as tabs */}
+      <nav className={styles.mobileTabs} aria-label="Sections">
+        <button aria-current={view === "files" ? "page" : undefined} onClick={() => (view === "files" ? goTo(null) : showView("files"))}>
+          My Space
+        </button>
+        <button aria-current={view === "shared" ? "page" : undefined} onClick={() => showView("shared")}>
+          Shared by me
+        </button>
+        <button aria-current={view === "with-me" ? "page" : undefined} onClick={() => showView("with-me")}>
+          Shared with me
+        </button>
+        <Link href="/vault">🔐 Vault</Link>
+      </nav>
+
       <div className={styles.body}>
         <aside className={styles.sidebar}>
           <button className={styles.newButton} onClick={showNewMenu} aria-haspopup="menu">
             <PlusIcon size={22} />
             New
           </button>
-          <button className={styles.navItem} onClick={() => goTo(null)} style={{ border: 0, textAlign: "left" }}>
+          <button className={view === "files" ? styles.navItem : styles.navLink} onClick={() => (view === "files" ? goTo(null) : showView("files"))}>
             <HomeIcon size={18} />
             My Space
           </button>
-          <Link href="/vault" className={styles.navItem} style={{ background: "transparent" }}>
+          <button className={view === "shared" ? styles.navItem : styles.navLink} onClick={() => showView("shared")}>
+            <ShareIcon size={18} />
+            Shared by me
+            {myShares.length > 0 && <span className={styles.navCount}>{myShares.length}</span>}
+          </button>
+          <button className={view === "with-me" ? styles.navItem : styles.navLink} onClick={() => showView("with-me")}>
+            <InboxIcon size={18} />
+            Shared with me
+          </button>
+          <Link href="/vault" className={styles.navLink}>
             <span aria-hidden>🔐</span>
             Secure Vault
           </Link>
@@ -297,6 +382,25 @@ export default function FilesApp({ user }: { user: User }) {
           </div>
         </aside>
 
+        {view !== "files" ? (
+          <main className={styles.main}>
+            <div className={styles.toolbar}>
+              <span className={styles.crumbCurrent}>{view === "shared" ? "Shared by me" : "Shared with me"}</span>
+            </div>
+            {view === "shared" ? (
+              <SharedByMe
+                shares={myShares}
+                loading={sharesLoading}
+                onToast={showToast}
+                onEdit={(share) =>
+                  getItem(uid, share.itemId).then((item) => (item ? setDialog({ type: "share", item }) : showToast("This item no longer exists")))
+                }
+              />
+            ) : (
+              <SharedWithMeList onToast={showToast} />
+            )}
+          </main>
+        ) : (
         <main className={styles.main} {...dropHandlers}>
           <div className={styles.toolbar}>
             <nav className={styles.crumbs} aria-label="Folder path">
@@ -337,6 +441,8 @@ export default function FilesApp({ user }: { user: User }) {
           <FileList
             items={visible}
             pendingIds={pendingIds}
+            sharedIds={sharedIds}
+            onShare={(item) => setDialog({ type: "share", item })}
             loading={loading}
             searching={!!search.trim()}
             onOpen={open}
@@ -355,6 +461,7 @@ export default function FilesApp({ user }: { user: User }) {
             </div>
           )}
         </main>
+        )}
       </div>
 
       <button className={styles.fab} onClick={showNewMenu} aria-label="New">
@@ -377,6 +484,14 @@ export default function FilesApp({ user }: { user: User }) {
 
       {menu && <Menu {...menu} onClose={() => setMenu(null)} />}
 
+      {dialog?.type === "share" && (
+        <ShareDialog item={dialog.item} existing={myShares.find((s) => s.itemId === dialog.item.id)} onClose={() => setDialog(null)} onToast={showToast} />
+      )}
+      {zipProgress && (
+        <div className={styles.toast} role="status" aria-live="polite">
+          Preparing “{zipProgress.name}.zip”… {zipProgress.percent}%
+        </div>
+      )}
       {dialog?.type === "newFolder" && (
         <NameDialog
           title="New folder"

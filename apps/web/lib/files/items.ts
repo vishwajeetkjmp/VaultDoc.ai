@@ -197,3 +197,15 @@ export async function openFile(item: Item, mode: "open" | "download") {
     throw e;
   }
 }
+
+/** Everything inside a folder, at every level (for "Download as ZIP"). */
+export async function listFolderTree(uid: string, folderId: string): Promise<Item[]> {
+  const snap = await getDocs(query(itemsCollection(uid), where("ancestorIds", "array-contains", folderId)));
+  return snap.docs.map(fromDoc).filter((i) => i.status === "ready");
+}
+
+/** A file's bytes, read with the owner's session. */
+export async function fileBytes(item: Item): Promise<Uint8Array> {
+  const blob = await getBlob(ref(bucket(), item.storagePath!));
+  return new Uint8Array(await blob.arrayBuffer());
+}

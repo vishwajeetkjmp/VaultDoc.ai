@@ -1,26 +1,22 @@
-import { initializeApp } from "firebase-admin/app";
+import "./setup";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
-import { setGlobalOptions, logger } from "firebase-functions/v2";
+import { logger } from "firebase-functions/v2";
 import { onObjectFinalized } from "firebase-functions/v2/storage";
 import { onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { deletedUserRef, wipeAccount } from "./accounts";
+import { deleteSharesOfItem } from "./shares";
 
-initializeApp();
+
 const db = getFirestore();
-
-// Same region as the Firestore database and Storage bucket (Delhi)
-setGlobalOptions({ region: "asia-south2", maxInstances: 10 });
 
 // My Files: users/{uid}/files/{id} ↔ items/{id}. Secure Vault (encrypted): users/{uid}/vault/{id} ↔ vaultItems/{id}
 const FILE_PATH = /^users\/([^/]+)\/(files|vault)\/([^/]+)$/;
 // Encrypted vault files are slightly larger than the original (IV + tag)
 const VAULT_OVERHEAD_BYTES = 1024;
 
-// Marks an account as deleted, so the triggers above don't recreate its usage records
-// while its data is being removed. Holds only the uid and a timestamp.
-const deletedUserRef = (uid: string) => db.doc(`deletedUsers/${uid}`);
 
 // Defaults, overridable with the Firestore document config/limits (keep in sync with apps/web/lib/files/limits.ts)
 const DEFAULT_MAX_FILE_BYTES = 20 * 1024 * 1024;
@@ -113,9 +109,11 @@ async function cleanUpDeletedFile(uid: string, eventId: string, data: FirebaseFi
   });
 }
 
-export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", (event) =>
-  cleanUpDeletedFile(event.params.uid, event.id, event.data?.data()),
-);
+export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", async (event) => {
+  // A deleted item can't stay shared (folders delete their contents one by one, so each is covered)
+  await deleteSharesOfItem(event.params.uid, event.params.itemId);
+  await cleanUpDeletedFile(event.params.uid, event.id, event.data?.data());
+});
 
 export const onVaultItemDeleted = onDocumentDeleted("users/{uid}/vaultItems/{itemId}", (event) =>
   cleanUpDeletedFile(event.params.uid, event.id, event.data?.data()),
@@ -135,12 +133,13 @@ export const deleteAccount = onCall(async (request) => {
     throw new HttpsError("failed-precondition", "Please confirm your identity again, then retry.");
   }
 
-  await deletedUserRef(uid).set({ at: FieldValue.serverTimestamp() });
-  await getStorage().bucket().deleteFiles({ prefix: `users/${uid}/` });
-  await db.recursiveDelete(db.doc(`users/${uid}`));
-  await getAuth().deleteUser(uid);
+  await wipeAccount(uid);
   logger.info("Account deleted", { uid });
   return { deleted: true };
 });
 
 export { convertDocument } from "./convert";
+export { openShare, revokeShare, saveShare, sharedWithMe, shareFileUrl } from "./shares";
+export { adminApi } from "./admin";
+export { computeStatsHourly } from "./stats";
+export { reportClientError } from "./ops";

@@ -5,7 +5,7 @@ import { formatBytes, formatDate } from "../../lib/files/format";
 import type { Item } from "../../lib/files/items";
 import FileIcon from "./FileIcon";
 import styles from "./files.module.css";
-import { ArrowDownIcon, ArrowUpIcon, FolderIcon, MoreIcon, SearchIcon } from "./icons";
+import { ArrowDownIcon, ArrowUpIcon, FolderIcon, MoreIcon, PeopleIcon, SearchIcon } from "./icons";
 
 export type SortKey = "name" | "modified" | "size";
 type Sort = { key: SortKey; dir: 1 | -1 };
@@ -33,10 +33,13 @@ type Props = {
   onMenu: (item: Item, x: number, y: number) => void;
   onDelete: (item: Item) => void;
   onRename: (item: Item) => void;
+  /** Items that are shared (show a small people icon) */
+  sharedIds?: Set<string>;
+  onShare?: (item: Item) => void;
   emptyState: React.ReactNode;
 };
 
-export default function FileList({ items, pendingIds, loading, searching, onOpen, onMenu, onDelete, onRename, emptyState }: Props) {
+export default function FileList({ items, pendingIds, loading, searching, onOpen, onMenu, onDelete, onRename, sharedIds, onShare, emptyState }: Props) {
   const [sort, setSort] = useState<Sort>({ key: "name", dir: 1 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
@@ -67,6 +70,7 @@ export default function FileList({ items, pendingIds, loading, searching, onOpen
     else if (selected && e.key === "Enter") onOpen(selected);
     else if (selected && (e.key === "Delete" || e.key === "Backspace")) onDelete(selected);
     else if (selected && e.key === "F2") onRename(selected);
+    else if (selected && onShare && (e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey) onShare(selected);
     else return;
     e.preventDefault();
   };
@@ -114,6 +118,7 @@ export default function FileList({ items, pendingIds, loading, searching, onOpen
             item={item}
             pending={item.status !== "ready" && pendingIds.has(item.id)}
             selected={item.id === selectedId}
+            shared={!!sharedIds?.has(item.id)}
             onSelect={handleSelect}
             onOpen={onOpen}
             onMenu={onMenu}
@@ -143,6 +148,7 @@ const Row = memo(function Row({
   item,
   pending,
   selected,
+  shared,
   onSelect,
   onOpen,
   onMenu,
@@ -150,6 +156,7 @@ const Row = memo(function Row({
   item: Item;
   pending: boolean;
   selected: boolean;
+  shared: boolean;
   onSelect: (id: string) => void;
   onOpen: (item: Item) => void;
   onMenu: (item: Item, x: number, y: number) => void;
@@ -175,6 +182,11 @@ const Row = memo(function Row({
         <span className={styles.nameText} title={item.name}>
           {item.name}
         </span>
+        {shared && (
+          <span className={styles.sharedMark} title="Shared" aria-label="Shared">
+            <PeopleIcon size={15} />
+          </span>
+        )}
       </div>
       <div className={`${styles.metaCell} ${styles.modifiedCol}`}>{pending ? "Uploading…" : formatDate(date)}</div>
       <div className={styles.metaCell}>{folder ? "—" : formatBytes(item.size)}</div>

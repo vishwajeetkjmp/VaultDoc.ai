@@ -78,7 +78,8 @@ export function Menu({ x, y, actions, onClose }: { x: number; y: number; actions
   );
 }
 
-function Dialog({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
+/** Modal shell: title, backdrop click and Escape close it. */
+export function Dialog({ title, children, onClose, wide }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -87,7 +88,7 @@ function Dialog({ title, children, onClose }: { title: string; children: React.R
 
   return (
     <div className={styles.backdrop} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={styles.dialog} role="dialog" aria-modal aria-label={title}>
+      <div className={styles.dialog} role="dialog" aria-modal aria-label={title} style={wide ? { maxWidth: 560 } : undefined}>
         <div className={styles.dialogTitle}>{title}</div>
         {children}
       </div>
