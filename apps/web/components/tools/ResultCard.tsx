@@ -2,8 +2,11 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "../AuthProvider";
 import { formatBytes } from "../../lib/files/format";
+import { withNext } from "../../lib/nav";
 import styles from "./tools.module.css";
 
 const autoDownloaded = new WeakSet<Blob>();
@@ -63,15 +66,16 @@ export default function ResultCard({
 // Firestore/Storage code loads only for signed-in users, keeping tool pages light for visitors
 const SaveToMyFiles = dynamic(() => import("./SaveToMyFiles"), { ssr: false });
 
-/** Signed-in users can keep the result in My Files; visitors are invited to create a free account. */
+/** Signed-in users can keep the result in My Space; visitors are invited to create a free account. */
 function SaveOrSignUp({ blob, fileName }: { blob: Blob; fileName: string }) {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
   if (loading) return null;
 
   if (user?.emailVerified) {
     return (
       <div className={styles.cta}>
-        <div className={styles.ctaTitle}>Keep a copy in My Files</div>
+        <div className={styles.ctaTitle}>Keep a copy in My Space</div>
         <SaveToMyFiles user={user} blob={blob} fileName={fileName} />
       </div>
     );
@@ -85,9 +89,10 @@ function SaveOrSignUp({ blob, fileName }: { blob: Blob; fileName: string }) {
         Vault.
       </div>
       <div className={styles.ctaRow}>
-        <a href="/signup" className={styles.primary} style={{ height: 40, fontSize: 15 }}>
+        {/* Comes back to this tool after signing up */}
+        <Link href={withNext("/signup", pathname)} className={styles.primary} style={{ height: 40, fontSize: 15 }}>
           Create free account
-        </a>
+        </Link>
         <span className={styles.muted}>No card needed</span>
       </div>
     </div>

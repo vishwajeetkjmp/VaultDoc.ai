@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { applyTheme, getStoredTheme, ThemeName, THEME_LABELS, THEMES } from "../lib/theme";
 import styles from "./themeMenu.module.css";
 
-/** Theme picker: a button showing the current theme and a menu of all themes with colour previews. */
+/** Theme picker: opens on hover (or click / keyboard) with a menu of all themes and colour previews. */
 export default function ThemeMenu() {
   const [theme, setTheme] = useState<ThemeName>("dark");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // Opened by the mouse hovering: don't move keyboard focus into the menu then
+  const byHover = useRef(false);
 
   useEffect(() => {
     setTheme(getStoredTheme());
@@ -16,8 +18,8 @@ export default function ThemeMenu() {
 
   useEffect(() => {
     if (!open) return;
-    // Focus the current theme so arrow keys start from there
-    ref.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+    // Opened by click or keyboard: focus the current theme so arrow keys start from there
+    if (!byHover.current) ref.current?.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
     const onClick = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") return setOpen(false);
@@ -42,10 +44,22 @@ export default function ThemeMenu() {
   };
 
   return (
-    <div ref={ref} className={styles.wrap}>
+    <div
+      ref={ref}
+      className={styles.wrap}
+      onMouseEnter={() => {
+        byHover.current = true;
+        setOpen(true);
+      }}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
         className={styles.trigger}
-        onClick={() => setOpen((o) => !o)}
+        // Hover already opened it, so a click only opens (toggling would close it right away)
+        onClick={() => {
+          byHover.current = false;
+          setOpen(true);
+        }}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Theme: ${THEME_LABELS[theme]}. Change theme`}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import HeroBackground from "./hero/HeroBackground";
 import HeroPrimaryButton from "./HeroPrimaryButton";
 
@@ -74,7 +75,7 @@ export default function Hero() {
               borderRadius: "10px",
             }}
           />
-          <a
+          <Link
             href="/about"
             style={{
               background: "var(--bg-elevated)",
@@ -87,7 +88,7 @@ export default function Hero() {
             }}
           >
             Learn more
-          </a>
+          </Link>
         </div>
       </div>
     </section>

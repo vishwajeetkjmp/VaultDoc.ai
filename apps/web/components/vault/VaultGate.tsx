@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { enrollDevice, LOCKOUT_AFTER, lockoutUntil, setNewPin, unlockWithPin, WIPE_AFTER } from "../../lib/vault/device";
 import { sendPinResetEmail } from "../../lib/vault/emailReset";
@@ -10,9 +11,9 @@ import styles from "./vault.module.css";
 function Frame({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
   return (
     <div className={styles.page}>
-      <a href="/dashboard" className={styles.backLink}>
-        ← My Files
-      </a>
+      <Link href="/dashboard" className={styles.backLink}>
+        ← My Space
+      </Link>
       <div className={styles.card}>
         <div className={styles.icon} aria-hidden>
           {icon}

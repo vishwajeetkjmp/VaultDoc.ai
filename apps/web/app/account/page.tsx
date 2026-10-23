@@ -130,7 +130,7 @@ function DeleteAccount({ user }: { user: User }) {
         This can&apos;t be undone
       </div>
       <ul className={styles.list} style={{ marginTop: 8 }}>
-        <li>All files and folders in My Files</li>
+        <li>All files and folders in My Space</li>
         <li>Your Secure Vault and everything in it</li>
         <li>Your storage records and your sign-in account</li>
       </ul>
@@ -156,7 +156,7 @@ function DeleteAccount({ user }: { user: User }) {
       />
       {!needsPassword && (
         <p className={styles.cardText} style={{ fontSize: 13 }}>
-          You&apos;ll be asked to sign in with Google once more to confirm it&apos;s you.
+          You&apos;ll be asked to log in with Google once more to confirm it&apos;s you.
         </p>
       )}
       {error && (

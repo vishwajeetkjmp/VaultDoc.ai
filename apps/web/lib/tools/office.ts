@@ -1,4 +1,4 @@
-import { EMULATOR_PROJECT_ID, USE_EMULATORS } from "../firebase";
+import { auth, EMULATOR_PROJECT_ID, USE_EMULATORS } from "../firebase";
 
 /** Word → PDF runs on a server (see functions/src/convert.ts); everything else in the free tools is local. */
 const ENDPOINT = USE_EMULATORS
@@ -7,12 +7,19 @@ const ENDPOINT = USE_EMULATORS
 
 export async function convertWordToPdf(file: File, signal?: AbortSignal): Promise<Blob> {
   if (file.size > 20 * 1024 * 1024) throw new Error("This file is larger than 20 MB.");
+  // The converter is for logged-in users only; it checks this token
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Please log in to use this tool.");
   let res: Response;
   try {
     res = await fetch(ENDPOINT, {
       method: "POST",
       body: file,
-      headers: { "Content-Type": "application/octet-stream", "X-File-Name": encodeURIComponent(file.name) },
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-File-Name": encodeURIComponent(file.name),
+        Authorization: `Bearer ${token}`,
+      },
       signal,
     });
   } catch {

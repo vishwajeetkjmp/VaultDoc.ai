@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import SitePage from "../../components/SitePage";
+import HeroPrimaryButton from "../../components/HeroPrimaryButton";
 import styles from "../../components/site.module.css";
 
 export const metadata: Metadata = {
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 const FEATURES = [
   {
     icon: "📁",
-    title: "My Files",
+    title: "My Space",
     text: "Upload PDFs, Word, Excel, images and ZIPs. Organise them in folders and find anything fast. Each account's files are private to that account.",
   },
   {
@@ -61,12 +63,10 @@ export default function AboutPage() {
       </section>
 
       <section className={styles.section} style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <a href="/signup" className={styles.button}>
-          Get started free
-        </a>
-        <a href="/pricing" className={styles.buttonGhost}>
+        <HeroPrimaryButton className={styles.button} />
+        <Link href="/pricing" className={styles.buttonGhost}>
           See pricing
-        </a>
+        </Link>
       </section>
     </SitePage>
   );

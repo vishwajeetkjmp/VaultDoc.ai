@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "firebase/auth";
 import ProfileMenu from "../ProfileMenu";
+import SiteLinks from "../SiteLinks";
 import FileList from "../files/FileList";
 import FileIcon from "../files/FileIcon";
 import { ConfirmDialog, Menu, MenuAction, NameDialog } from "../files/Popups";
@@ -197,12 +199,13 @@ export default function VaultBrowser({ user, vaultKey, onLock }: { user: User; v
   return (
     <div className={files.app}>
       <header className={files.topbar}>
-        <a href="/dashboard" className={files.brand}>
+        <Link href="/dashboard" className={files.brand}>
           <span className={files.brandMark}>🔐</span>
           <span className={files.brandName}>Secure Vault</span>
-        </a>
+        </Link>
         <div />
         <div className={files.topRight}>
+          <SiteLinks />
           <span className={secondsLeft <= 10 ? styles.lockChipSoon : styles.lockChip} title="Locks automatically after 60 seconds without activity">
             {secondsLeft <= 10 ? `Locking in ${secondsLeft}s` : "Auto-lock on"}
           </span>
@@ -219,10 +222,10 @@ export default function VaultBrowser({ user, vaultKey, onLock }: { user: User; v
             <PlusIcon size={22} />
             New
           </button>
-          <a href="/dashboard" className={files.navItem} style={{ background: "transparent" }}>
+          <Link href="/dashboard" className={files.navItem} style={{ background: "transparent" }}>
             <FolderIcon size={18} />
-            My Files
-          </a>
+            My Space
+          </Link>
           <button className={files.navItem} onClick={() => setChain([])} style={{ border: 0, textAlign: "left" }}>
             🔐 Secure Vault
           </button>

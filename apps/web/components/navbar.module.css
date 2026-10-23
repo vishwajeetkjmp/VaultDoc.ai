@@ -53,6 +53,110 @@
   align-items: center;
   gap: 18px;
 }
+.siteLinks {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 15px;
+  white-space: nowrap;
+}
+/* The My Files search box needs the room on smaller screens; the logo still leads home */
+@media (max-width: 1100px) {
+  .siteLinks {
+    display: none;
+  }
+}
+.authArea {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  animation: authFadeIn 0.2s ease-out;
+}
+/* Holds the login buttons' space while Firebase checks the session, so the bar doesn't jump */
+.authPlaceholder {
+  display: block;
+  width: 160px;
+  height: 38px;
+}
+.avatarPlaceholder {
+  display: block;
+  width: 36px;
+  height: 36px;
+}
+/* Asterisk on tools that need an account: red = locked (logged out), green = unlocked */
+.markLocked,
+.markUnlocked {
+  margin-left: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  vertical-align: super;
+  line-height: 0;
+}
+.markLocked {
+  color: #e5484d;
+}
+.markUnlocked {
+  color: #30a46c;
+}
+/* Locked menu item: dimmed, not clickable, explains itself on hover */
+.megaItemLocked {
+  position: relative;
+  cursor: not-allowed;
+}
+/* Dim the text, not the item, so the tooltip stays fully readable */
+.megaItemLocked > * {
+  opacity: 0.55;
+}
+/* Two classes, so this beats the normal .megaItem hover highlight defined further down */
+.megaItem.megaItemLocked:hover,
+.megaItem.megaItemLocked:focus-visible {
+  background: transparent;
+}
+.megaItemLocked::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 10px;
+  bottom: calc(100% - 4px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.megaItemLocked:hover::after,
+.megaItemLocked:focus-visible::after {
+  opacity: 1;
+  transform: none;
+}
+.mobileLinkLocked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.lockedNote {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* The red asterisk after "My Space" */
+.mySpaceMark {
+  margin-left: 1px;
+  color: #e5484d;
+  font-size: 13px;
+  font-weight: 500;
+  vertical-align: super;
+  line-height: 0;
+}
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+  }
+}
 .signIn {
   padding: 8px 0;
   font-size: 16px;
@@ -137,7 +241,10 @@
   padding: 18px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: var(--card);
+  /* See-through glass, matching the Theme menu */
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
 }
 .megaColumn {
@@ -287,6 +394,12 @@
   .links,
   .signIn {
     display: none;
+  }
+  .authArea {
+    gap: 12px;
+  }
+  .authPlaceholder {
+    width: 90px;
   }
   .menuButton {
     display: grid;

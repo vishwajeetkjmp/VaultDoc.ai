@@ -48,7 +48,7 @@ export function signInWithGoogle() {
 
 let signingOut = false;
 
-/** True while a deliberate sign-out is in progress, so protected pages don't bounce to /signin. */
+/** True while a deliberate sign-out is in progress, so protected pages don't bounce to /login. */
 export function isSigningOut() {
   return signingOut;
 }

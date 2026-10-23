@@ -1,14 +1,25 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { getToolGroups, isComingSoon } from "../lib/tools";
+import { usePathname } from "next/navigation";
+import { getToolGroups, isComingSoon, needsLogin } from "../lib/tools";
+import { useAuth } from "./AuthProvider";
+import LoginMark, { LOGIN_TIP } from "./LoginMark";
 import styles from "./navbar.module.css";
 
 /** "Free Tool" menu, grouped (PDF tools / Image tools). Opens on hover, click/tap or keyboard. */
 export default function ToolDropdown() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Close after picking a tool (pages change without a reload now)
+  useEffect(() => setOpen(false), [pathname]);
   const ref = useRef<HTMLDivElement>(null);
   const groups = getToolGroups();
+  const { user, loading, wasLoggedIn } = useAuth();
+  // Before Firebase answers, assume last visit's state so the asterisk doesn't flip colour
+  const loggedIn = !!user || (loading && wasLoggedIn);
 
   useEffect(() => {
     if (!open) return;
@@ -37,15 +48,31 @@ export default function ToolDropdown() {
             <div key={group} className={styles.megaColumn}>
               <div className={styles.megaHeading}>{group}</div>
               <div className={tools.length > 4 ? styles.megaGrid : undefined}>
-                {tools.map((tool) => (
-                  <a key={tool.id} href={tool.route} role="menuitem" className={styles.megaItem}>
+                {tools.map((tool) => {
+                  const loginTool = needsLogin(tool);
+                  const name = (
                     <span className={styles.megaName}>
-                      {tool.name}
+                      <span>
+                        {tool.name}
+                        {loginTool && <LoginMark unlocked={loggedIn} />}
+                      </span>
                       {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
                     </span>
-                    {tool.description && <span className={styles.megaDesc}>{tool.description}</span>}
-                  </a>
-                ))}
+                  );
+                  const desc = tool.description && <span className={styles.megaDesc}>{tool.description}</span>;
+                  // Locked for visitors: not clickable, and hovering explains why
+                  return loginTool && !loggedIn ? (
+                    <span key={tool.id} role="menuitem" aria-disabled="true" tabIndex={0} className={`${styles.megaItem} ${styles.megaItemLocked}`} data-tip={LOGIN_TIP} aria-label={`${tool.name}: ${LOGIN_TIP}`}>
+                      {name}
+                      {desc}
+                    </span>
+                  ) : (
+                    <Link key={tool.id} href={tool.route} role="menuitem" className={styles.megaItem}>
+                      {name}
+                      {desc}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           ))}

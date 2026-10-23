@@ -1,22 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "./AuthProvider";
 
 /**
- * "Get started free" for visitors, "Go to My Files" for signed-in users.
- * Hidden (but keeping its space) until Firebase reports the sign-in state,
+ * "Get started free" for visitors, "Go to My Space" for logged-in users.
+ * Hidden (but keeping its space) until Firebase reports the login state,
  * so the wrong label never flashes.
  */
-export default function HeroPrimaryButton({ style }: { style: React.CSSProperties }) {
+export default function HeroPrimaryButton({ style, className }: { style?: React.CSSProperties; className?: string }) {
   const { user, loading } = useAuth();
-  const signedIn = !!user;
+  const loggedIn = !!user;
   return (
-    <a
-      href={signedIn ? "/dashboard" : "/signup"}
+    <Link
+      href={loggedIn ? "/dashboard" : "/signup"}
+      className={className}
       style={{ ...style, visibility: loading ? "hidden" : "visible" }}
       aria-hidden={loading || undefined}
     >
-      {signedIn ? "Go to My Files" : "Get started free"}
-    </a>
+      {loggedIn ? "Go to My Space" : "Get started free"}
+    </Link>
   );
 }

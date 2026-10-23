@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useAuth } from "../AuthProvider";
 import { formatRupees, Plan, PLAN_TABS } from "../../lib/plans";
 import PlanIcon from "./PlanIcon";
 import styles from "./pricing.module.css";
@@ -75,7 +77,10 @@ function priceText(plan: Plan, billing: Billing): { price: string; note: string 
 
 function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
   const { price, note } = priceText(plan, billing);
-  const available = !!plan.cta.href;
+  const { user, loading } = useAuth();
+  // Logged-in people already have the free plan, so its button opens My Space instead of sign-up
+  const cta = plan.id === "free" && user ? { label: "Go to My Space", href: "/dashboard" } : plan.cta;
+  const available = !!cta.href;
 
   return (
     <article className={plan.highlighted ? styles.cardHighlighted : styles.card} aria-label={`${plan.name} plan`}>
@@ -92,12 +97,13 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       <p className={styles.priceNote}>{note}</p>
 
       {available ? (
-        <a href={plan.cta.href} className={styles.cta}>
-          {plan.cta.label}
-        </a>
+        // Invisible (but keeping its space) until we know whether someone is logged in, so the label never flips
+        <Link href={cta.href!} className={styles.cta} style={{ visibility: loading ? "hidden" : "visible" }}>
+          {cta.label}
+        </Link>
       ) : (
         <span className={styles.ctaDisabled} aria-disabled>
-          {plan.cta.label}
+          {cta.label}
         </span>
       )}
 

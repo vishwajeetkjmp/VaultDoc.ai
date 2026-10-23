@@ -1,15 +1,20 @@
+"use client";
+
 import Link from "next/link";
+import { useNextParam, withNext } from "../../lib/nav";
 import styles from "./auth.module.css";
 
-/** Shared frame for the sign-in, sign-up and password-reset pages: way back home, brand, and the tabs. */
+/** Shared frame for the login, sign-up and password-reset pages: way back home, brand, and the tabs. */
 export default function AuthShell({
   active,
   children,
 }: {
-  /** null hides the Sign in / Create account tabs */
-  active: "signin" | "signup" | null;
+  /** null hides the Login / Create account tabs */
+  active: "login" | "signup" | null;
   children: React.ReactNode;
 }) {
+  // Switching between Login and Create account keeps the page to return to
+  const next = useNextParam();
   return (
     <div className={styles.page}>
       <Link href="/" className={styles.homeLink}>
@@ -26,16 +31,16 @@ export default function AuthShell({
         </p>
 
         {active && (
-          <nav className={styles.tabs} aria-label="Sign in or create account">
+          <nav className={styles.tabs} aria-label="Login or create account">
             <Link
-              href="/signin"
-              className={active === "signin" ? styles.tabActive : styles.tab}
-              aria-current={active === "signin" ? "page" : undefined}
+              href={withNext("/login", next)}
+              className={active === "login" ? styles.tabActive : styles.tab}
+              aria-current={active === "login" ? "page" : undefined}
             >
-              Sign in
+              Login
             </Link>
             <Link
-              href="/signup"
+              href={withNext("/signup", next)}
               className={active === "signup" ? styles.tabActive : styles.tab}
               aria-current={active === "signup" ? "page" : undefined}
             >

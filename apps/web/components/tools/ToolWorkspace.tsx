@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { ToolPage } from "../../lib/toolPages";
+import LoginRequired from "./LoginRequired";
 import styles from "./tools.module.css";
 
 // Each tool's code loads only on its own page
@@ -22,6 +23,10 @@ export default function ToolWorkspace({ page }: { page: ToolPage }) {
     case "image-edit":
       return <ImageEditor />;
     case "office":
-      return <OfficeConverter accept={page.accept} acceptLabel={page.acceptLabel} />;
+      return (
+        <LoginRequired toolName={page.heading}>
+          <OfficeConverter accept={page.accept} acceptLabel={page.acceptLabel} />
+        </LoginRequired>
+      );
   }
 }

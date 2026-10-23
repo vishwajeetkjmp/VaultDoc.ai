@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { User } from "firebase/auth";
 import { ROOT_FOLDER } from "../../lib/files/items";
 import { useStorageAccount } from "../../lib/files/limits";
 import { uploadQueue, useUploads } from "../../lib/files/uploader";
 import styles from "./tools.module.css";
 
-/** Uploads a tool's result into the top level of My Files, with inline progress. */
+/** Uploads a tool's result into the top level of My Space, with inline progress. */
 export default function SaveToMyFiles({ user, blob, fileName }: { user: User; blob: Blob; fileName: string }) {
   const account = useStorageAccount(user.uid);
   const uploads = useUploads();
@@ -31,14 +32,14 @@ export default function SaveToMyFiles({ user, blob, fileName }: { user: User; bl
     <div className={styles.ctaRow}>
       {!mine ? (
         <button className={styles.primary} style={{ height: 40, fontSize: 15 }} onClick={save}>
-          Save to My Files
+          Save to My Space
         </button>
       ) : mine.state === "done" ? (
         <>
           <span>✅ Saved.</span>
-          <a href="/dashboard" className={styles.secondary}>
-            Open My Files
-          </a>
+          <Link href="/dashboard" className={styles.secondary}>
+            Open My Space
+          </Link>
         </>
       ) : mine.state === "failed" || mine.state === "skipped" ? (
         <span className={styles.muted}>{mine.message ?? "Couldn't save"}</span>

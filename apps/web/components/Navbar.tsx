@@ -1,17 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import ToolDropdown from "./ToolDropdown";
 import ThemeMenu from "./ThemeMenu";
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "./AuthProvider";
-import { getToolGroups, isComingSoon } from "../lib/tools";
+import { getToolGroups, isComingSoon, needsLogin } from "../lib/tools";
+import LoginMark, { LOGIN_TIP } from "./LoginMark";
 import { applyTheme, getStoredTheme, ThemeName, THEMES } from "../lib/theme";
+import { withNext } from "../lib/nav";
 import styles from "./navbar.module.css";
 
 /** Site navbar. Below 900px the middle links move into a menu button so the bar always fits the screen. */
 export default function Navbar() {
-  const { user, loading } = useAuth();
+  const { user, loading, wasLoggedIn } = useAuth();
+  // While Firebase checks the session, lay the bar out as it looked last time, so nothing shifts
+  const showMySpace = !!user || (loading && wasLoggedIn);
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeName>("dark");
   const navRef = useRef<HTMLElement>(null);
@@ -19,6 +26,9 @@ export default function Navbar() {
   useEffect(() => {
     if (menuOpen) setTheme(getStoredTheme());
   }, [menuOpen]);
+
+  // Pages now change without a reload, so close the phone menu when the page changes
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -37,37 +47,47 @@ export default function Navbar() {
 
   return (
     <nav ref={navRef} className={styles.nav}>
-      <a href="/" className={styles.brand} aria-label="VaultDocAI home">
+      <Link href="/" className={styles.brand} aria-label="VaultDocAI home">
         <BrandMark />
         VaultDocAI
-      </a>
+      </Link>
 
       <div className={styles.links}>
         <ToolDropdown />
-        <a href="/pricing" className={styles.link}>
+        <Link href="/pricing" className={styles.link}>
           Pricing
-        </a>
-        <a href="/about" className={styles.link}>
+        </Link>
+        <Link href="/about" className={styles.link}>
           About
-        </a>
+        </Link>
+        {showMySpace && (
+          <Link href="/dashboard" className={styles.link} style={{ visibility: user ? "visible" : "hidden" }}>
+            <MySpaceLabel />
+          </Link>
+        )}
       </div>
 
       <div className={styles.right}>
         <div className={styles.desktopOnly}>
           <ThemeMenu />
         </div>
-        {/* Hide auth links until Firebase reports whether someone is signed in, to avoid a flash */}
+        {/* Until Firebase reports whether someone is logged in, keep the space empty so nothing flashes or jumps */}
+        {loading && <span className={wasLoggedIn ? styles.avatarPlaceholder : styles.authPlaceholder} aria-hidden />}
         {!loading && !user && (
-          <>
-            <a href="/signin" className={styles.signIn}>
-              Sign In
-            </a>
-            <a href="/signup" className={styles.signUp}>
+          <span className={styles.authArea}>
+            <Link href={withNext("/login", pathname)} className={styles.signIn}>
+              Login
+            </Link>
+            <Link href={withNext("/signup", pathname)} className={styles.signUp}>
               Sign Up
-            </a>
-          </>
+            </Link>
+          </span>
         )}
-        {user && <ProfileMenu user={user} />}
+        {user && (
+          <span className={styles.authArea}>
+            <ProfileMenu user={user} />
+          </span>
+        )}
         <button
           className={styles.menuButton}
           onClick={() => setMenuOpen((o) => !o)}
@@ -80,24 +100,49 @@ export default function Navbar() {
 
       {menuOpen && (
         <div className={styles.mobilePanel}>
+          {user && (
+            <>
+              <Link href="/dashboard" className={styles.mobileLink}>
+                <MySpaceLabel />
+              </Link>
+              <Link href="/vault" className={styles.mobileLink}>
+                🔐 Secure Vault
+              </Link>
+              <div className={styles.mobileDivider} />
+            </>
+          )}
           {getToolGroups().map(([group, tools]) => (
             <div key={group}>
               <div className={styles.mobileHeading}>{group}</div>
-              {tools.map((tool) => (
-                <a key={tool.id} href={tool.route} className={styles.mobileLink}>
-                  {tool.name}
-                  {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
-                </a>
-              ))}
+              {tools.map((tool) =>
+                needsLogin(tool) && !user ? (
+                  // Phones have no hover, so the reason is written next to the locked tool
+                  <span key={tool.id} className={`${styles.mobileLink} ${styles.mobileLinkLocked}`} aria-disabled="true">
+                    <span>
+                      {tool.name}
+                      <LoginMark unlocked={false} />
+                    </span>
+                    <span className={styles.lockedNote}>{LOGIN_TIP}</span>
+                  </span>
+                ) : (
+                  <Link key={tool.id} href={tool.route} className={styles.mobileLink}>
+                    <span>
+                      {tool.name}
+                      {needsLogin(tool) && <LoginMark unlocked />}
+                    </span>
+                    {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
+                  </Link>
+                ),
+              )}
             </div>
           ))}
           <div className={styles.mobileDivider} />
-          <a href="/pricing" className={styles.mobileLink}>
+          <Link href="/pricing" className={styles.mobileLink}>
             Pricing
-          </a>
-          <a href="/about" className={styles.mobileLink}>
+          </Link>
+          <Link href="/about" className={styles.mobileLink}>
             About
-          </a>
+          </Link>
           <div className={styles.mobileDivider} />
           <div className={styles.mobileHeading}>Theme</div>
           <div className={styles.mobileThemes}>
@@ -116,24 +161,30 @@ export default function Navbar() {
               </button>
             ))}
           </div>
-          <div className={styles.mobileDivider} />
-          {user ? (
+          {!user && (
             <>
-              <a href="/dashboard" className={styles.mobileLink}>
-                My Files
-              </a>
-              <a href="/vault" className={styles.mobileLink}>
-                🔐 Secure Vault
-              </a>
+              <div className={styles.mobileDivider} />
+              <Link href={withNext("/login", pathname)} className={styles.mobileLink}>
+                Login
+              </Link>
             </>
-          ) : (
-            <a href="/signin" className={styles.mobileLink}>
-              Sign In
-            </a>
           )}
         </div>
       )}
     </nav>
+  );
+}
+
+/** "My Space" with a small raised red asterisk, the logged-in user's way into their files. */
+function MySpaceLabel() {
+  return (
+    // One span, so menu rows that spread their contents apart keep the asterisk beside the text
+    <span>
+      My Space
+      <span className={styles.mySpaceMark} aria-hidden>
+        *
+      </span>
+    </span>
   );
 }
 

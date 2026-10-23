@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Navbar from "../../../components/Navbar";
@@ -40,7 +41,7 @@ export default function ToolPage({ params }: { params: { toolId: string } }) {
           <p className={styles.subtitle}>{page.subheading}</p>
           <span className={styles.badge}>
             {page.local ? "🔒 Private: files never leave your device" : "🔒 Encrypted upload, deleted right after conversion"}
-            {" · Free · No sign-up"}
+            {page.loginRequired ? " · Free with an account" : " · Free · No sign-up"}
           </span>
         </section>
 
@@ -79,10 +80,10 @@ export default function ToolPage({ params }: { params: { toolId: string } }) {
               .map((id) => getTool(id))
               .filter((t): t is NonNullable<typeof t> => !!t)
               .map((t) => (
-                <a key={t.id} href={t.route} className={styles.relatedItem}>
+                <Link key={t.id} href={t.route} className={styles.relatedItem}>
                   <div className={styles.relatedName}>{t.name}</div>
                   <div className={styles.relatedDesc}>{t.description}</div>
-                </a>
+                </Link>
               ))}
           </div>
         </section>

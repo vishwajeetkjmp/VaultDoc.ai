@@ -18,7 +18,7 @@ export default function ResetPasswordPage() {
     setError("");
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email.trim(), { url: `${window.location.origin}/signin` });
+      await sendPasswordResetEmail(auth, email.trim(), { url: `${window.location.origin}/login` });
       setSent(true);
     } catch (err: any) {
       if (err?.code === "auth/invalid-email") setError("Please enter a valid email address.");
@@ -42,8 +42,8 @@ export default function ResetPasswordPage() {
             If an account exists for <b>{email.trim()}</b>, we&apos;ve sent a link to reset the password. Check your
             inbox and spam folder.
           </p>
-          <Link href="/signin" className={styles.primaryButton} style={{ display: "block", textAlign: "center" }}>
-            Back to sign in
+          <Link href="/login" className={styles.primaryButton} style={{ display: "block", textAlign: "center" }}>
+            Back to login
           </Link>
         </>
       ) : (
@@ -73,8 +73,8 @@ export default function ResetPasswordPage() {
       )}
       <p className={styles.footer}>
         Remembered it?{" "}
-        <Link href="/signin" className={styles.link}>
-          Sign in
+        <Link href="/login" className={styles.link}>
+          Login
         </Link>
       </p>
     </AuthShell>
