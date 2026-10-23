@@ -367,7 +367,16 @@ const actions: Record<string, Handler> = {
 
 export const adminApi = onCall({ secrets: [RESEND_API_KEY], memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
   const data = (request.data ?? {}) as Record<string, unknown>;
-  const handler = actions[String(data.action ?? "")];
+  const action = String(data.action ?? "");
+  const handler = actions[action];
   if (!handler) throw new HttpsError("invalid-argument", "Unknown admin action.");
-  return handler(request, data);
+  try {
+    return await handler(request, data);
+  } catch (e) {
+    if (e instanceof HttpsError) throw e; // expected refusals ("Please log in", "You don't have access"...)
+    // Anything else is a bug or a permissions problem: log it in full, show the admin a short reason
+    const message = e instanceof Error ? e.message : String(e);
+    logger.error(`adminApi ${action} failed: ${message}`, { action, uid: request.auth?.uid ?? null, stack: e instanceof Error ? e.stack : undefined });
+    throw new HttpsError("internal", `Couldn't complete “${action}”: ${message.slice(0, 200)}`);
+  }
 });

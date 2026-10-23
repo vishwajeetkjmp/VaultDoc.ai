@@ -69,8 +69,10 @@ export async function computeStats(): Promise<CurrentStats> {
     pageToken = page.pageToken;
   } while (pageToken);
 
-  const [storage, noExpiry, notExpired] = await Promise.all([
-    db.collection("users").aggregate({ bytes: AggregateField.sum("usedBytes"), files: AggregateField.sum("fileCount") }).get(),
+  // One field per aggregation: summing two fields in one query would need a composite index
+  const [bytesAgg, filesAgg, noExpiry, notExpired] = await Promise.all([
+    db.collection("users").aggregate({ bytes: AggregateField.sum("usedBytes") }).get(),
+    db.collection("users").aggregate({ files: AggregateField.sum("fileCount") }).get(),
     db.collection("shares").where("expiresAt", "==", null).count().get(),
     db.collection("shares").where("expiresAt", ">", Timestamp.fromMillis(now)).count().get(),
   ]);
@@ -83,8 +85,8 @@ export async function computeStats(): Promise<CurrentStats> {
     newUsers7,
     newUsers30,
     activeUsers7,
-    storageBytes: Number(storage.data().bytes) || 0,
-    files: Number(storage.data().files) || 0,
+    storageBytes: Number(bytesAgg.data().bytes) || 0,
+    files: Number(filesAgg.data().files) || 0,
     sharesActive: noExpiry.data().count + notExpired.data().count,
     at: now,
   };
