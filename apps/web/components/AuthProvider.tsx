@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { isSigningOut, onAuthChange } from "../lib/auth";
 import type { User } from "firebase/auth";
+import VerifyEmail from "./auth/VerifyEmail";
 
 type AuthContextValue = {
   user: User | null;
@@ -18,17 +19,23 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // Firebase keeps the same User object when it changes (e.g. email verified), so count updates to re-render
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     const unsub = onAuthChange((u) => {
       setUser(u);
+      setVersion((v) => v + 1);
       setLoading(false);
     });
     return () => unsub();
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({ user, loading }), [user, loading, version]);
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
@@ -38,8 +45,9 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
-// Wrap any page that requires login. Redirects to /signin if not authenticated.
-export function RequireAuth({ children }: { children: React.ReactNode }) {
+// Wrap any page that requires login. Redirects to /signin if not authenticated, and asks
+// email/password accounts to verify their email first (unless allowUnverified).
+export function RequireAuth({ children, allowUnverified }: { children: React.ReactNode; allowUnverified?: boolean }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -74,6 +82,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
+  if (!user.emailVerified && !allowUnverified) return <VerifyEmail user={user} />;
 
   return <>{children}</>;
 }
