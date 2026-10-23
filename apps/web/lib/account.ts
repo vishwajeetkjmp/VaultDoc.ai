@@ -6,18 +6,10 @@ import {
   signOut,
   User,
 } from "firebase/auth";
-import { connectFunctionsEmulator, getFunctions, httpsCallable } from "firebase/functions";
-import app, { auth, USE_EMULATORS } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { fns } from "./callable";
+import { auth } from "./firebase";
 import { forgetDevice } from "./vault/device";
-
-let functions: ReturnType<typeof getFunctions> | undefined;
-function fns() {
-  if (!functions) {
-    functions = getFunctions(app, "asia-south2"); // same region as the Cloud Functions
-    if (USE_EMULATORS) connectFunctionsEmulator(functions, "127.0.0.1", 5001);
-  }
-  return functions;
-}
 
 export function usesPassword(user: User) {
   return user.providerData.some((p) => p.providerId === "password");

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Newsreader } from "next/font/google";
 import "../styles/globals.css";
 import { AuthProvider } from "../components/AuthProvider";
+import ErrorReporter from "../components/ErrorReporter";
 import { THEME_ORDER, THEME_STORAGE_KEY } from "../lib/theme";
 
 // Self-hosted at build time by Next.js (no requests to Google from visitors' browsers)
@@ -39,6 +40,7 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>{children}</AuthProvider>
+        <ErrorReporter />
       </body>
     </html>
   );

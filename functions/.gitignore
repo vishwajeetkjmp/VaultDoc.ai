@@ -1,2 +1,5 @@
 node_modules/
 lib/
+
+# Firebase secrets for the emulators
+.secret.local

@@ -6,6 +6,7 @@ rules_version = '2';
 //   users/{uid}/items/{itemId}      a file or folder in the user's tree
 //   users/{uid}/vault/meta          Secure Vault: vault key wrapped by the recovery key
 //   users/{uid}/vaultItems/{itemId} Secure Vault: encrypted file/folder record
+//   shares/{linkId}                 a shared My Space item; written only by Cloud Functions
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -20,6 +21,12 @@ service cloud.firestore {
 
     function isOwner(uid) {
       return signedIn() && request.auth.uid == uid && verified();
+    }
+
+    // Owners see their own shares ("Shared by me"); recipients go through Cloud Functions
+    match /shares/{linkId} {
+      allow read: if signedIn() && verified() && resource.data.ownerUid == request.auth.uid;
+      allow write: if false;
     }
 
     match /config/{doc} {

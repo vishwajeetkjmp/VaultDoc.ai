@@ -1,0 +1,18 @@
+{
+  "displayName": "VaultDoc: server errors (5xx) in functions",
+  "documentation": { "content": "Cloud Functions are returning server errors. Check Error Reporting and the function logs.", "mimeType": "text/markdown" },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "More than 10 server errors in 5 minutes",
+      "conditionThreshold": {
+        "filter": "resource.type = \"cloud_run_revision\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\" AND resource.labels.service_name != \"gotenberg\"",
+        "aggregations": [{ "alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_SUM", "crossSeriesReducer": "REDUCE_SUM" }],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 10,
+        "duration": "0s"
+      }
+    }
+  ],
+  "alertStrategy": { "autoClose": "3600s" }
+}
