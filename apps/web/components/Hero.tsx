@@ -1,4 +1,5 @@
 import HeroBackground from "./hero/HeroBackground";
+import HeroPrimaryButton from "./HeroPrimaryButton";
 
 export default function Hero() {
   return (
@@ -63,8 +64,7 @@ export default function Hero() {
             flexWrap: "wrap",
           }}
         >
-          <a
-            href="/signup"
+          <HeroPrimaryButton
             style={{
               background: "var(--primary)",
               color: "#fff",
@@ -73,9 +73,7 @@ export default function Hero() {
               padding: "14px 28px",
               borderRadius: "10px",
             }}
-          >
-            Get started free
-          </a>
+          />
           <a
             href="/about"
             style={{

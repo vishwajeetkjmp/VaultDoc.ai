@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthChange } from "../lib/auth";
+import { isSigningOut, onAuthChange } from "../lib/auth";
 import type { User } from "firebase/auth";
 
 type AuthContextValue = {
@@ -44,7 +44,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    // After signing out, ProfileMenu sends the user to the landing page instead
+    if (!loading && !user && !isSigningOut()) {
       router.replace("/signin");
     }
   }, [loading, user, router]);
@@ -57,7 +58,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0a0e1a",
+          background: "var(--bg)",
         }}
       >
         <div
@@ -65,8 +66,8 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
             width: 40,
             height: 40,
             borderRadius: "50%",
-            border: "4px solid #1c2740",
-            borderTopColor: "#6d5cff",
+            border: "4px solid var(--border)",
+            borderTopColor: "var(--primary)",
             animation: "spin 0.8s linear infinite",
           }}
         />
