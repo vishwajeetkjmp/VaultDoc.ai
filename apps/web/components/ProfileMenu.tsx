@@ -78,6 +78,10 @@ export default function ProfileMenu({ user }: { user: User }) {
             <StorageMeter uid={user.uid} />
           </div>
 
+          <a href="/account" style={styles.accountLink} onClick={() => setOpen(false)}>
+            Manage account
+          </a>
+
           <button onClick={handleSignOut} style={styles.signOutBtn}>
             Sign out
           </button>
@@ -126,6 +130,12 @@ const styles: Record<string, React.CSSProperties> = {
   bigAvatar: { margin: "18px 0 10px" },
   greeting: { fontSize: 22, fontWeight: 400 },
   fullName: { fontSize: 14, color: "var(--text-muted)", marginTop: 2 },
+  accountLink: {
+    marginTop: 12,
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--text-muted)",
+  },
   storage: {
     width: "100%",
     marginTop: 16,

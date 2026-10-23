@@ -1,9 +1,11 @@
 import { initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { setGlobalOptions, logger } from "firebase-functions/v2";
 import { onObjectFinalized } from "firebase-functions/v2/storage";
 import { onDocumentDeleted } from "firebase-functions/v2/firestore";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
 
 initializeApp();
 const db = getFirestore();
@@ -15,6 +17,10 @@ setGlobalOptions({ region: "asia-south2", maxInstances: 10 });
 const FILE_PATH = /^users\/([^/]+)\/(files|vault)\/([^/]+)$/;
 // Encrypted vault files are slightly larger than the original (IV + tag)
 const VAULT_OVERHEAD_BYTES = 1024;
+
+// Marks an account as deleted, so the triggers above don't recreate its usage records
+// while its data is being removed. Holds only the uid and a timestamp.
+const deletedUserRef = (uid: string) => db.doc(`deletedUsers/${uid}`);
 
 // Defaults, overridable with the Firestore document config/limits (keep in sync with apps/web/lib/files/limits.ts)
 const DEFAULT_MAX_FILE_BYTES = 20 * 1024 * 1024;
@@ -38,8 +44,13 @@ export const onFileUploaded = onObjectFinalized(async (event) => {
   const configRef = db.doc("config/limits");
 
   const orphan = await db.runTransaction(async (tx) => {
-    const [item, user, config] = await Promise.all([tx.get(itemRef), tx.get(userRef), tx.get(configRef)]);
-    if (!item.exists) return true; // record was deleted (e.g. upload cancelled)
+    const [item, user, config, tombstone] = await Promise.all([
+      tx.get(itemRef),
+      tx.get(userRef),
+      tx.get(configRef),
+      tx.get(deletedUserRef(uid)),
+    ]);
+    if (!item.exists || tombstone.exists) return true; // record deleted (upload cancelled, or account deleted)
     if (item.get("status") === "ready") return false; // already counted (event retried)
 
     const maxFileBytes =
@@ -86,6 +97,7 @@ async function cleanUpDeletedFile(uid: string, eventId: string, data: FirebaseFi
   }
 
   if (data.status !== "ready") return; // never counted
+  if ((await deletedUserRef(uid).get()).exists) return; // whole account is being deleted; nothing to update
   const size = Number(data.size) || 0;
   const userRef = db.doc(`users/${uid}`);
   const eventRef = db.doc(`users/${uid}/_events/${eventId}`);
@@ -108,3 +120,25 @@ export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", (ev
 export const onVaultItemDeleted = onDocumentDeleted("users/{uid}/vaultItems/{itemId}", (event) =>
   cleanUpDeletedFile(event.params.uid, event.id, event.data?.data()),
 );
+
+/**
+ * Deletes the caller's account and everything in it: My Files and Secure Vault
+ * files, their records, the usage record, and the sign-in account itself.
+ * Requires a sign-in within the last 5 minutes, so an unattended session
+ * can't be used to wipe someone's account.
+ */
+export const deleteAccount = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Sign in first.");
+  const signedInAt = Number(request.auth?.token.auth_time) || 0;
+  if (Date.now() / 1000 - signedInAt > 5 * 60) {
+    throw new HttpsError("failed-precondition", "Please confirm your identity again, then retry.");
+  }
+
+  await deletedUserRef(uid).set({ at: FieldValue.serverTimestamp() });
+  await getStorage().bucket().deleteFiles({ prefix: `users/${uid}/` });
+  await db.recursiveDelete(db.doc(`users/${uid}`));
+  await getAuth().deleteUser(uid);
+  logger.info("Account deleted", { uid });
+  return { deleted: true };
+});

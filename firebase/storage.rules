@@ -14,6 +14,11 @@ service firebase.storage {
       return 20 * 1024 * 1024;
     }
 
+    // Signed in as this user, with a verified email (Google accounts arrive verified)
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid && request.auth.token.email_verified == true;
+    }
+
     function allowedType(contentType) {
       return contentType.matches(
         'application/pdf'
@@ -29,9 +34,9 @@ service firebase.storage {
     }
 
     match /users/{uid}/files/{itemId} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if isOwner(uid);
 
-      allow create: if request.auth != null && request.auth.uid == uid
+      allow create: if isOwner(uid)
         && request.resource.size <= maxFileBytes()
         && allowedType(request.resource.contentType);
 
@@ -42,9 +47,9 @@ service firebase.storage {
     // Secure Vault: encrypted in the browser, so the server only ever sees opaque bytes.
     // A little headroom over the file limit for the encryption's IV and tag.
     match /users/{uid}/vault/{itemId} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read: if isOwner(uid);
 
-      allow create: if request.auth != null && request.auth.uid == uid
+      allow create: if isOwner(uid)
         && request.resource.size <= maxFileBytes() + 1024
         && request.resource.contentType == 'application/octet-stream';
 
