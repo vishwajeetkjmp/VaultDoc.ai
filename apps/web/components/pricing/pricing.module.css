@@ -1,0 +1,216 @@
+/* Pricing page — large serif headings, segmented tabs, roomy plan cards */
+
+.serif {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 20px 96px;
+}
+.heading {
+  composes: serif;
+  text-align: center;
+  font-size: clamp(48px, 9vw, 92px);
+  line-height: 1.05;
+}
+.sub {
+  margin: 14px auto 0;
+  max-width: 560px;
+  text-align: center;
+  font-size: 17px;
+  color: var(--text-muted);
+}
+
+/* Segmented control */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 44px 0 40px;
+}
+.segment {
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 70%, var(--bg));
+}
+.segmentButton {
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.segmentButton:hover {
+  color: var(--text);
+}
+.segmentActive {
+  composes: segmentButton;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.segmentSmall .segmentButton,
+.segmentSmall .segmentActive {
+  padding: 7px 16px;
+  font-size: 13px;
+}
+.save {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+/* Cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+.gridTwo {
+  composes: grid;
+  max-width: 820px;
+  margin: 0 auto;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 40px 36px;
+  border-radius: 28px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  animation: rise 0.25s ease both;
+}
+.cardHighlighted {
+  composes: card;
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.icon {
+  height: 84px;
+  color: var(--text);
+}
+.nameRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+.name {
+  composes: serif;
+  font-size: 44px;
+  line-height: 1.1;
+}
+.badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tagline {
+  margin-top: 8px;
+  font-size: 18px;
+}
+.price {
+  margin-top: 26px;
+  font-size: 30px;
+  font-weight: 700;
+}
+.priceNote {
+  margin-top: 6px;
+  min-height: 52px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.cta {
+  display: block;
+  margin-top: 22px;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  transition: opacity 0.15s;
+}
+.cta:hover {
+  opacity: 0.88;
+}
+.ctaDisabled {
+  composes: cta;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  cursor: default;
+}
+.ctaDisabled:hover {
+  opacity: 1;
+}
+.divider {
+  height: 1px;
+  margin: 30px 0 22px;
+  background: var(--border);
+}
+.featuresTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.features {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.features li {
+  display: flex;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.check {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--primary);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (max-width: 520px) {
+  .card {
+    padding: 30px 24px;
+  }
+  .name {
+    font-size: 38px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+}
