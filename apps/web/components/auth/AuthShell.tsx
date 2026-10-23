@@ -1,12 +1,13 @@
 import Link from "next/link";
 import styles from "./auth.module.css";
 
-/** Shared frame for the sign-in and sign-up pages: way back home, brand, and the two tabs. */
+/** Shared frame for the sign-in, sign-up and password-reset pages: way back home, brand, and the tabs. */
 export default function AuthShell({
   active,
   children,
 }: {
-  active: "signin" | "signup";
+  /** null hides the Sign in / Create account tabs */
+  active: "signin" | "signup" | null;
   children: React.ReactNode;
 }) {
   return (
@@ -24,22 +25,24 @@ export default function AuthShell({
           AI-powered analysis for your documents
         </p>
 
-        <nav className={styles.tabs} aria-label="Sign in or create account">
-          <Link
-            href="/signin"
-            className={active === "signin" ? styles.tabActive : styles.tab}
-            aria-current={active === "signin" ? "page" : undefined}
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/signup"
-            className={active === "signup" ? styles.tabActive : styles.tab}
-            aria-current={active === "signup" ? "page" : undefined}
-          >
-            Create account
-          </Link>
-        </nav>
+        {active && (
+          <nav className={styles.tabs} aria-label="Sign in or create account">
+            <Link
+              href="/signin"
+              className={active === "signin" ? styles.tabActive : styles.tab}
+              aria-current={active === "signin" ? "page" : undefined}
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/signup"
+              className={active === "signup" ? styles.tabActive : styles.tab}
+              aria-current={active === "signup" ? "page" : undefined}
+            >
+              Create account
+            </Link>
+          </nav>
+        )}
 
         {children}
       </div>

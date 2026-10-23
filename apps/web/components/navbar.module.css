@@ -1,0 +1,167 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.link:hover {
+  color: var(--primary);
+}
+.right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.signIn {
+  padding: 8px 14px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.signUp {
+  padding: 9px 18px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.signUp:hover {
+  background: var(--primary-hover);
+}
+.menuButton {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  place-items: center;
+}
+
+/* Free Tool dropdown */
+.dropdown {
+  position: relative;
+}
+.dropdownButton {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 4px;
+}
+.dropdownPanel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  min-width: 260px;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+.toolItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.toolItem:hover,
+.toolItem:focus-visible {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  outline: none;
+}
+.soon {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+/* Phone menu panel */
+.mobilePanel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 8px 16px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.25);
+}
+.mobileHeading {
+  padding: 12px 8px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.mobileLink {
+  composes: toolItem;
+  font-size: 16px;
+  padding: 12px 8px;
+}
+.mobileDivider {
+  height: 1px;
+  margin: 8px 0;
+  background: var(--border);
+}
+
+@media (max-width: 900px) {
+  .nav {
+    grid-template-columns: 1fr auto;
+    padding: 12px 16px;
+  }
+  .links,
+  .signIn {
+    display: none;
+  }
+  .menuButton {
+    display: grid;
+  }
+  /* Theme button shows just its icon */
+  .right [data-theme-label] {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .brand {
+    font-size: 18px;
+  }
+  .signUp {
+    padding: 8px 12px;
+  }
+}
