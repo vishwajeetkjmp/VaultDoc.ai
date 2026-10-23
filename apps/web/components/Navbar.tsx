@@ -5,7 +5,7 @@ import ToolDropdown from "./ToolDropdown";
 import ThemeMenu from "./ThemeMenu";
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "./AuthProvider";
-import { getFreeTools, isComingSoon } from "../lib/tools";
+import { getToolGroups, isComingSoon } from "../lib/tools";
 import { applyTheme, getStoredTheme, ThemeName, THEMES } from "../lib/theme";
 import styles from "./navbar.module.css";
 
@@ -80,12 +80,16 @@ export default function Navbar() {
 
       {menuOpen && (
         <div className={styles.mobilePanel}>
-          <div className={styles.mobileHeading}>Free tools</div>
-          {getFreeTools().map((tool) => (
-            <a key={tool.id} href={tool.route} className={styles.mobileLink}>
-              {tool.name}
-              {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
-            </a>
+          {getToolGroups().map(([group, tools]) => (
+            <div key={group}>
+              <div className={styles.mobileHeading}>{group}</div>
+              {tools.map((tool) => (
+                <a key={tool.id} href={tool.route} className={styles.mobileLink}>
+                  {tool.name}
+                  {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
+                </a>
+              ))}
+            </div>
           ))}
           <div className={styles.mobileDivider} />
           <a href="/pricing" className={styles.mobileLink}>

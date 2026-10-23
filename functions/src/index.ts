@@ -142,3 +142,5 @@ export const deleteAccount = onCall(async (request) => {
   logger.info("Account deleted", { uid });
   return { deleted: true };
 });
+
+export { convertDocument } from "./convert";

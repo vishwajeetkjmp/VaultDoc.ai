@@ -125,6 +125,60 @@
   background: var(--card);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
+/* Grouped "Free Tool" menu */
+.megaPanel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  gap: 28px;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+}
+.megaColumn {
+  min-width: 220px;
+}
+.megaHeading {
+  padding: 0 10px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.megaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  column-gap: 8px;
+}
+.megaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 10px;
+  border-radius: 8px;
+}
+.megaItem:hover,
+.megaItem:focus-visible {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  outline: none;
+}
+.megaName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--text);
+}
+.megaDesc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
 .toolItem {
   display: flex;
   align-items: center;
@@ -154,6 +208,8 @@
   top: 100%;
   left: 0;
   right: 0;
+  max-height: calc(100dvh - 70px);
+  overflow-y: auto;
   padding: 8px 16px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
