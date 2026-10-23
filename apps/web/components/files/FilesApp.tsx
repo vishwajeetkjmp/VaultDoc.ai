@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { User } from "firebase/auth";
 import ProfileMenu from "../ProfileMenu";
-import ThemeToggle from "../ThemeToggle";
+import ThemeMenu from "../ThemeMenu";
 import { ACCEPT, SUPPORTED_LABEL } from "../../lib/files/fileTypes";
 import { formatBytes } from "../../lib/files/format";
 import {
@@ -266,7 +266,7 @@ export default function FilesApp({ user }: { user: User }) {
         </label>
         <div className={styles.topRight}>
           <span className={styles.hideOnMobile}>
-            <ThemeToggle />
+            <ThemeMenu />
           </span>
           <ProfileMenu user={user} />
         </div>

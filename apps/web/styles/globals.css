@@ -31,6 +31,42 @@
   --card: #ffffff;
 }
 
+/* Clay: warm ivory with a terracotta accent */
+[data-theme="clay"] {
+  --bg: #f5f4ed;
+  --bg-elevated: #faf9f5;
+  --text: #141413;
+  --text-muted: #6b6a64;
+  --primary: #c96442;
+  --primary-hover: #b05730;
+  --border: #e3dfd3;
+  --card: #fdfcf8;
+}
+
+/* Clay Dark: soft charcoal layers, off-white text, terracotta accent */
+[data-theme="clay-dark"] {
+  --bg: #151515;
+  --bg-elevated: #1f1f1f;
+  --text: #efefed;
+  --text-muted: #9a9a96;
+  --primary: #d77657;
+  --primary-hover: #c4633f;
+  --border: #2e2e2c;
+  --card: #1f1f1f;
+}
+
+/* Native form controls and scrollbars follow light or dark */
+:root,
+[data-theme="dark"],
+[data-theme="grey"],
+[data-theme="clay-dark"] {
+  color-scheme: dark;
+}
+[data-theme="light"],
+[data-theme="clay"] {
+  color-scheme: light;
+}
+
 * {
   margin: 0;
   padding: 0;
