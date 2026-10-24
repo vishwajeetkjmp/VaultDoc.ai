@@ -19,9 +19,22 @@ const serif = Newsreader({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vaultdocai.com"),
   title: "VaultDocAI — Understand every document in seconds",
   description:
-    "AI document intelligence. Upload documents and ask questions in plain language.",
+    "Your private document space with AI. Upload contracts, reports and invoices, ask questions in plain language, get deadline reminders, and use free PDF tools.",
+  keywords: ["document AI", "PDF tools", "ask questions about PDF", "Word to PDF", "merge PDF", "secure document storage", "India"],
+  // How links look when shared on WhatsApp, LinkedIn, X...
+  openGraph: {
+    type: "website",
+    siteName: "VaultDocAI",
+    url: "https://vaultdocai.com",
+    title: "VaultDocAI — Understand every document in seconds",
+    description: "Your private document space with AI: ask questions about your documents, get deadline reminders, free PDF tools.",
+    images: [{ url: "/icons/icon-512.png", width: 512, height: 512, alt: "VaultDocAI" }],
+    locale: "en_IN",
+  },
+  twitter: { card: "summary", title: "VaultDocAI", description: "Your private document space with AI." },
   // Installable as an app (see public/manifest.webmanifest and lib/pwa.ts)
   manifest: "/manifest.webmanifest",
   applicationName: "VaultDocAI",

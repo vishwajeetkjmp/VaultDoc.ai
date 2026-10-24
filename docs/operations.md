@@ -58,3 +58,30 @@ After go-live, add an uptime check for the website: Monitoring → Uptime checks
 - **Admin → Overview**: sign-ups, active users, storage, shares, conversions (numbers refresh hourly; **Refresh** recalculates now).
 - **Admin → System**: live checks of database, storage, logins, converter and email, plus links to Error Reporting, logs, alerts, Cloud Run and billing.
 - Website crashes are reported automatically (`reportClientError` → Error Reporting, service "website").
+
+## Launch day
+1. **Let search engines list the site.** In `firebase.json`, under the `vaultdoc-ai` hosting site, delete the
+   header `X-Robots-Tag: noindex, nofollow`, then `firebase deploy --only hosting:vaultdoc-ai`.
+   `robots.txt` (apps/web/app/robots.ts) already keeps My Space, Vault, Account, login pages and shared links out.
+2. **Google Search Console:** add the *Domain* property `vaultdocai.com` (verify with the TXT record it gives you,
+   added at GoDaddy → DNS), then submit `https://vaultdocai.com/sitemap.xml`.
+3. **Payments:** after Razorpay KYC is approved, switch to live keys (see "Razorpay" below).
+
+## App Check (blocks bots from the backend)
+The website sends App Check tokens (reCAPTCHA Enterprise, `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` in
+`apps/web/.env.local`; see `apps/web/lib/appCheck.ts`). Rollout:
+1. **Watch** (now): Firebase console → App Check → APIs. Cloud Firestore, Cloud Storage and Cloud Functions show
+   verified vs unverified requests. Nothing is blocked.
+2. **Enforce** once nearly all requests are verified (a few days of normal use): in the same page, *Enforce* for
+   Firestore and Storage; for functions, add `enforceAppCheck: true` to the callables and deploy.
+   Old app versions without App Check stop working, so wait until the PWA/site has updated for everyone.
+3. Local testing against the real project: open the site on localhost, copy the *debug token* printed in the
+   browser console, and add it in App Check → Apps → ⋮ → Manage debug tokens. The emulators don't use App Check.
+
+## Razorpay
+- Keys: `RAZORPAY_KEY_ID` in `functions/.env.vaultdoc-ai` (public), secrets `RAZORPAY_KEY_SECRET` and
+  `RAZORPAY_WEBHOOK_SECRET` (`firebase functions:secrets:set …`). Test keys start `rzp_test_`, live `rzp_live_`.
+- Webhook: `https://asia-south2-vaultdoc-ai.cloudfunctions.net/razorpayWebhook`, event `payment.captured`, same
+  secret as `RAZORPAY_WEBHOOK_SECRET`. Create it separately in Live mode.
+- Going live: generate live keys → set the secret → change `RAZORPAY_KEY_ID` → create the live webhook →
+  `firebase deploy --only functions:createProOrder,functions:verifyProPayment,functions:razorpayWebhook`.

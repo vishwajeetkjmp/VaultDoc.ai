@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import SitePage from "../../components/SitePage";
 import styles from "../../components/site.module.css";
+import { CONTACT_EMAIL } from "../../lib/contact";
 
 export const metadata: Metadata = { title: "Terms of Service — VaultDocAI" };
 
@@ -12,15 +13,10 @@ export default function TermsPage() {
       <h1 className={styles.title} style={{ fontSize: 34 }}>
         Terms of Service
       </h1>
-      <div className={styles.draft}>
-        ⚠️ <b>Draft.</b> These terms must be reviewed by a qualified lawyer and the placeholders in [brackets]
-        filled in before public launch.
-      </div>
-
       <div className={styles.legal}>
-        <p>Last updated: [date]</p>
+        <p>Last updated: 24 October 2026</p>
         <p>
-          These terms are an agreement between you and <b>[legal entity name]</b> (&quot;we&quot;) for your use of
+          These terms are an agreement between you and <b>Vishwajeet Kumar</b>, who operates VaultDocAI (&quot;we&quot;) for your use of
           VaultDocAI. By creating an account you agree to them and to our{" "}
           <Link href="/privacy" style={{ color: "var(--primary)" }}>
             Privacy Policy
@@ -59,8 +55,14 @@ export default function TermsPage() {
 
         <h2>5. Plans and limits</h2>
         <p>
-          The free plan currently includes 1 GB of storage and files up to 20 MB. We may change plans and limits
-          with reasonable notice. [Paid plan terms, billing and refunds to be added.]
+          The free plan currently includes 1 GB of storage and files up to 20 MB. Pro costs ₹399 for 30 days, paid once
+          through Razorpay; there is no automatic renewal, and paying again adds 30 days. Payments are not refunded,
+          except where money was taken but Pro didn&apos;t start, or you were charged twice (see the{" "}
+          <Link href="/refunds" style={{ color: "var(--primary)" }}>
+            Refund and cancellation policy
+          </Link>
+          ). We may change plans, prices and limits with reasonable notice; a change never shortens a period you have
+          already paid for.
         </p>
 
         <h2>6. Availability and backups</h2>
@@ -71,8 +73,9 @@ export default function TermsPage() {
 
         <h2>7. Liability</h2>
         <p>
-          To the extent permitted by law, we are not liable for indirect or consequential losses. [Liability cap to
-          be defined by counsel.]
+          To the extent permitted by law, we are not liable for indirect or consequential losses, and our total
+          liability to you is limited to the amount you paid us in the 12 months before the claim (or ₹1,000 if you
+          use only the free plan).
         </p>
 
         <h2>8. Ending your account</h2>
@@ -83,12 +86,15 @@ export default function TermsPage() {
 
         <h2>9. Governing law</h2>
         <p>
-          These terms are governed by the laws of India, and courts at <b>[city]</b> have jurisdiction.
+          These terms are governed by the laws of India, and courts at <b>Patna, Bihar</b> have jurisdiction.
         </p>
 
         <h2>10. Contact</h2>
         <p>
-          <b>[email]</b>, [address].
+          <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "var(--primary)" }}>
+            {CONTACT_EMAIL}
+          </a>{" "}
+          · Vishwajeet Kumar, Sector-168, Noida, Uttar Pradesh 201305, India.
         </p>
       </div>
     </SitePage>

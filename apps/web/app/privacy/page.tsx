@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import SitePage from "../../components/SitePage";
 import styles from "../../components/site.module.css";
+import { CONTACT_EMAIL } from "../../lib/contact";
 
 export const metadata: Metadata = { title: "Privacy Policy — VaultDocAI" };
 
@@ -11,16 +12,11 @@ export default function PrivacyPage() {
       <h1 className={styles.title} style={{ fontSize: 34 }}>
         Privacy Policy
       </h1>
-      <div className={styles.draft}>
-        ⚠️ <b>Draft.</b> This policy describes how VaultDocAI works today. It must be reviewed by a qualified lawyer
-        and the placeholders in [brackets] filled in before public launch.
-      </div>
-
       <div className={styles.legal}>
-        <p>Last updated: [date]</p>
+        <p>Last updated: 24 October 2026</p>
         <p>
           This policy explains what personal data VaultDocAI (&quot;we&quot;) collects, why, and the choices you have.
-          VaultDocAI is operated by <b>[legal entity name]</b>, [address], India. We act as the Data Fiduciary for
+          VaultDocAI is operated by <b>Vishwajeet Kumar</b>, Sector-168, Noida, Uttar Pradesh 201305, India. We act as the Data Fiduciary for
           your personal data under India&apos;s Digital Personal Data Protection Act, 2023 (&quot;DPDP Act&quot;).
         </p>
 
@@ -39,6 +35,10 @@ export default function PrivacyPage() {
           </li>
           <li>
             <b>Usage records:</b> how much storage you use and how many files you have.
+          </li>
+          <li>
+            <b>Payments (Pro):</b> the amount, date, payment method type and Razorpay order and payment IDs. Card, UPI
+            and bank details are entered with <b>Razorpay</b>, our payment processor, and never reach us.
           </li>
           <li>
             <b>Technical data:</b> basic logs (such as IP address and timestamps) kept by our infrastructure
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
           Your files and records are stored with Google Cloud / Firebase in the <b>asia-south2 (Delhi, India)</b>{" "}
           region. Google acts as our data processor. Sign-in is handled by Firebase Authentication. If you use AI
           features, the file you ask about is processed by Google Cloud&apos;s AI service, which may be outside India. Emails (invites,
-          reminders) are sent through Resend.
+          reminders) are sent through Resend. Payments are processed by Razorpay in India.
         </p>
 
         <h2>4. On your device</h2>
@@ -83,7 +83,8 @@ export default function PrivacyPage() {
         <p>
           We keep your data while your account exists. When you delete a file, it is removed from storage. When you
           delete your account (Account → Delete account), all your files, vault data, records and your sign-in
-          account are deleted. Backups or logs held by our providers may persist for a limited period [specify].
+          account are deleted. Backups or logs held by our providers may persist for up to 30 days. Payment records are kept as long as the
+          law requires (for example, for tax purposes).
         </p>
 
         <h2>6. Your rights</h2>
@@ -112,7 +113,12 @@ export default function PrivacyPage() {
 
         <h2>9. Contact and grievances</h2>
         <p>
-          Grievance Officer: <b>[name]</b>, <b>[email]</b>, [address]. We aim to respond within [timeframe].
+          Grievance Officer: <b>Vishwajeet Kumar</b>,{" "}
+          <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "var(--primary)" }}>
+            {CONTACT_EMAIL}
+          </a>
+          , Sector-168, Noida, Uttar Pradesh 201305, India. We acknowledge grievances within 48 hours and aim to resolve
+          them within 15 days.
         </p>
 
         <h2>10. Changes</h2>
