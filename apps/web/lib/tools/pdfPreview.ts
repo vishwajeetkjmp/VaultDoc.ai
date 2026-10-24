@@ -42,3 +42,26 @@ export async function renderThumbnail(doc: PDFDocumentProxy, pageNumber: number,
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.8));
   return blob ? URL.createObjectURL(blob) : canvas.toDataURL();
 }
+
+/** Page sizes as shown (in PDF points, page rotation applied), for laying out editors. */
+export async function pageSizes(doc: PDFDocumentProxy): Promise<{ width: number; height: number }[]> {
+  const sizes = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const page = await doc.getPage(n);
+    const { width, height } = page.getViewport({ scale: 1 });
+    sizes.push({ width, height });
+  }
+  return sizes;
+}
+
+/** Renders one page (1-based) onto a new canvas at `scale` pixels per point. */
+export async function renderPageCanvas(doc: PDFDocumentProxy, pageNumber: number, scale: number): Promise<HTMLCanvasElement> {
+  const page = await doc.getPage(pageNumber);
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  await page.render({ canvasContext: canvas.getContext("2d")!, viewport, intent: "print" }).promise;
+  page.cleanup();
+  return canvas;
+}

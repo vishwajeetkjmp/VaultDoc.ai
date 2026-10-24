@@ -41,7 +41,7 @@ export default function ToolPage({ params }: { params: { toolId: string } }) {
           <p className={styles.subtitle}>{page.subheading}</p>
           <span className={styles.badge}>
             {page.local ? "🔒 Private: files never leave your device" : "🔒 Encrypted upload, deleted right after conversion"}
-            {page.loginRequired ? " · Free with an account" : " · Free · No sign-up"}
+            {page.proRequired ? " · Pro" : page.loginRequired ? " · Free with an account" : " · Free · No sign-up"}
           </span>
         </section>
 

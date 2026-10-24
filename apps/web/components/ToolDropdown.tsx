@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getToolGroups, isComingSoon, needsLogin } from "../lib/tools";
+import { getToolGroups, isComingSoon, needsLogin, needsPro } from "../lib/tools";
+import ProTag from "./ProTag";
 import { useAuth } from "./AuthProvider";
 import LoginMark, { LOGIN_TIP } from "./LoginMark";
 import styles from "./navbar.module.css";
@@ -55,6 +56,7 @@ export default function ToolDropdown() {
                       <span>
                         {tool.name}
                         {loginTool && <LoginMark unlocked={loggedIn} />}
+                        {needsPro(tool) && <ProTag />}
                       </span>
                       {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
                     </span>
