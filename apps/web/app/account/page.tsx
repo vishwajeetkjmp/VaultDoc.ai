@@ -6,6 +6,7 @@ import type { User } from "firebase/auth";
 import { RequireAuth, useAuth } from "../../components/AuthProvider";
 import Avatar from "../../components/Avatar";
 import SitePage from "../../components/SitePage";
+import AiMeter from "../../components/files/AiMeter";
 import StorageMeter from "../../components/files/StorageMeter";
 import styles from "../../components/site.module.css";
 import { confirmIdentity, deleteMyAccount, usesGoogle, usesPassword } from "../../lib/account";
@@ -73,6 +74,9 @@ function Account() {
       {user.emailVerified && (
         <section className={styles.section}>
           <h2 className={styles.h2}>AI</h2>
+          <div className={styles.card} style={{ marginBottom: 12 }}>
+            <AiMeter />
+          </div>
           <AiSetting uid={user.uid} />
         </section>
       )}

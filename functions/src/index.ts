@@ -149,6 +149,6 @@ export { openShare, revokeShare, saveShare, sharedWithMe, shareFileUrl } from ".
 export { adminApi } from "./admin";
 export { computeStatsHourly } from "./stats";
 export { reportClientError } from "./ops";
-export { aiAnalyze, aiAsk, aiInfo, sendReminders } from "./ai";
+export { aiAnalyze, aiAsk, aiInfo, aiQuota, sendReminders } from "./ai";
 export { expirePlans } from "./plans";
 export { createProOrder, razorpayWebhook, verifyProPayment } from "./payments";

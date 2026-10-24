@@ -437,6 +437,13 @@ export const aiInfo = onCall(async (request) => {
   };
 });
 
+/** Today's AI questions for the account pages' meter (works before AI is turned on, too). */
+export const aiQuota = onCall(async (request) => {
+  if (!request.auth?.token.email_verified) throw new HttpsError("unauthenticated", "Please log in first.");
+  const user = await db().doc(`users/${request.auth.uid}`).get();
+  return { ...(await quota(request.auth.uid, user)), plan: planOf(user), enabled: user.get("aiEnabled") === true };
+});
+
 type AskInput = FilesInput & { question?: unknown; history?: unknown };
 type Citation = { page?: number; text: string };
 

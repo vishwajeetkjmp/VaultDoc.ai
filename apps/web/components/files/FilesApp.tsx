@@ -49,6 +49,7 @@ import {
   ZipIcon,
 } from "./icons";
 import { ConfirmDialog, Menu, MenuAction, NameDialog } from "./Popups";
+import AiMeter from "./AiMeter";
 import StorageMeter from "./StorageMeter";
 import UploadPanel from "./UploadPanel";
 
@@ -433,6 +434,9 @@ export default function FilesApp({ user }: { user: User }) {
             <StorageMeter uid={uid} />
             <div className={styles.meterText} style={{ marginTop: 4 }}>
               Max {formatBytes(account.limits.maxFileBytes)} per file
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <AiMeter />
             </div>
           </div>
         </aside>

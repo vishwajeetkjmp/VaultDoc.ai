@@ -14,6 +14,7 @@ import { getDisplayName, getFirstName } from "../lib/profile";
 
 // Loaded only when the card opens, so pages like the landing page don't pull in Firestore
 const StorageMeter = dynamic(() => import("./files/StorageMeter"), { ssr: false });
+const AiMeter = dynamic(() => import("./files/AiMeter"), { ssr: false });
 
 /** Avatar button that opens a Gmail-style account card. */
 export default function ProfileMenu({ user }: { user: User }) {
@@ -86,6 +87,11 @@ export default function ProfileMenu({ user }: { user: User }) {
 
           <div style={styles.storage}>
             <StorageMeter uid={user.uid} />
+            {user.emailVerified && (
+              <div style={{ marginTop: 14 }}>
+                <AiMeter />
+              </div>
+            )}
           </div>
 
           {install.kind !== "none" && (
