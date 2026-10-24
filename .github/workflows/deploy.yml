@@ -68,12 +68,16 @@ jobs:
         run: npm ci
 
       # Swaps GitHub's token for short-lived Google credentials of the
-      # github-deployer service account (no key file anywhere)
+      # github-deployer service account (no key file anywhere).
+      # token_format makes the exchange happen in this step, so if Google refuses,
+      # this step fails with Google's own reason (firebase-tools would only say
+      # "have you run firebase login?").
       - name: Sign in to Google Cloud
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
 
       # firebase.json's predeploy builds each site before uploading it
       - name: Deploy the website (vaultdocai.com)
