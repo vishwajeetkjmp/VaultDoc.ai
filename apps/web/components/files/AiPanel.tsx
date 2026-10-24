@@ -142,10 +142,10 @@ function Consent({ uid, onAccepted, onClose }: { uid: string; onAccepted: () => 
         <b style={{ fontSize: 17 }}>Turn on AI for My Space</b>
         <div className={styles.points}>
           <div>
-            📄 <b>Only the file you ask about</b> is sent to our AI provider, Anthropic (Claude), to read it and answer you.
+            📄 <b>Only the file you ask about</b> is sent to our AI provider, Google Cloud (Gemini), to read it and answer you.
           </div>
           <div>
-            🚫 <b>Never used to train AI.</b> Anthropic doesn't train on files sent this way.
+            🚫 <b>Never used to train AI.</b> Google doesn't train on files sent this way.
           </div>
           <div>
             🔐 <b>Your Secure Vault is never sent.</b> It stays end-to-end encrypted.

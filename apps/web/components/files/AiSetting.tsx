@@ -39,7 +39,7 @@ export default function AiSetting({ uid }: { uid: string }) {
             ✨ AI for My Space
           </span>
           <span className={site.cardText} style={{ display: "block", marginTop: 4 }}>
-            When on, a file you choose to ask about is sent to Anthropic (Claude) to read it and answer you. It isn&apos;t used to train AI, and the
+            When on, a file you choose to ask about is sent to Google Cloud (Gemini) to read it and answer you. It isn&apos;t used to train AI, and the
             Secure Vault is never sent. Turning this off stops all AI use; saved summaries and reminders stay until you delete them.
           </span>
         </span>

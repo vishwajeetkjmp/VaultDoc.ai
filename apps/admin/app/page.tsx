@@ -10,8 +10,9 @@ import { ago, bytes, num } from "../lib/format";
 
 type Overview = { current: CurrentStats; days: DayStats[] };
 
-// Claude Haiku 5.5 list prices (USD per 1M tokens), keep in sync with the model in functions/src/ai.ts
-const AI_PRICE = { input: 0.1, cached: 0.01, output: 0.5 };
+// Gemini 3.1 Flash-Lite list prices (USD per 1M tokens), keep in sync with the model in functions/src/ai.ts
+// (Claude Haiku 5.5, if AI_PROVIDER switches back: input 0.1, cached 0.01, output 0.5)
+const AI_PRICE = { input: 0.25, cached: 0.025, output: 1.5 };
 const USD_TO_INR = 84;
 const aiCostInr = (d?: DayStats) =>
   d ? (((d.aiInputTokens ?? 0) * AI_PRICE.input + (d.aiCachedTokens ?? 0) * AI_PRICE.cached + (d.aiOutputTokens ?? 0) * AI_PRICE.output) / 1e6) * USD_TO_INR : 0;

@@ -58,8 +58,8 @@ export default function PrivacyPage() {
         </p>
         <p>
           <b>AI features (optional).</b> AI is off until you turn it on. When it&apos;s on and you ask about a file in My
-          Space, that one file and your question are sent to our AI provider, <b>Anthropic</b> (Claude), only to produce
-          the answer or summary. Anthropic processes them on our behalf and does not use them to train its models. Saved
+          Space, that one file and your question are sent to our AI provider, <b>Google Cloud</b> (Gemini on Vertex AI), only to
+          produce the answer or summary. Google processes them on our behalf and does not use them to train its models. Saved
           summaries and the reminders you set are stored with your account. Your <b>Secure Vault</b> is never sent to any
           AI. You can turn AI off at any time in Account.
         </p>
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         <p>
           Your files and records are stored with Google Cloud / Firebase in the <b>asia-south2 (Delhi, India)</b>{" "}
           region. Google acts as our data processor. Sign-in is handled by Firebase Authentication. If you use AI
-          features, the file you ask about is processed by Anthropic, which may be outside India. Emails (invites,
+          features, the file you ask about is processed by Google Cloud&apos;s AI service, which may be outside India. Emails (invites,
           reminders) are sent through Resend.
         </p>
 
