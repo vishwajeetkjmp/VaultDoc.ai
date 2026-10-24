@@ -1,0 +1,101 @@
+# CI: checks every push and pull request. It never touches the live project:
+# tests run on the Firebase emulators with the pretend project "demo-vaultdoc".
+#
+# A workflow is a list of jobs; a job runs its steps one after another on a fresh
+# virtual machine ("runner"). Each step either runs a command (run:) or uses a
+# ready-made action from GitHub's marketplace (uses:).
+name: CI
+
+on:
+  push:
+    branches: ["**"] # every branch
+  pull_request:
+  workflow_dispatch: # adds a "Run workflow" button in the Actions tab
+
+# A newer push to the same branch cancels the older run (saves minutes)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# The token GitHub gives this workflow may only read the code
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Type-check, build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # The website build reads its public Firebase settings from the environment.
+    # They live in GitHub → Settings → Secrets and variables → Actions → Variables
+    # (public values, so Variables rather than Secrets).
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22 (same as the functions)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm # reuses downloaded packages between runs
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Install packages (website, admin, shared code)
+        run: npm ci
+
+      - name: Install packages (functions)
+        run: npm ci --prefix functions
+
+      - name: Type-check the functions
+        working-directory: functions # its own TypeScript version
+        run: npx tsc --noEmit -p .
+
+      - name: Type-check the website
+        run: npx tsc --noEmit -p apps/web
+
+      - name: Type-check the admin app
+        run: npx tsc --noEmit -p apps/admin
+
+      - name: Build the website (static export, like the deploy)
+        run: npm run build
+
+      - name: Build the functions
+        run: npm --prefix functions run build
+
+      # The emulators are written in Java
+      - name: Set up Java 21 (for the Firebase emulators)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # The emulators need a value for every secret the functions declare.
+      # These are placeholders (the real ones are only in Google Secret Manager);
+      # test-payments signs its webhook test with "emulator-not-used".
+      - name: Placeholder secrets for the emulators
+        run: |
+          {
+            echo "RESEND_API_KEY=emulator-not-used"
+            echo "ANTHROPIC_API_KEY=emulator-not-used"
+            echo "RAZORPAY_KEY_SECRET=emulator-not-used"
+            echo "RAZORPAY_WEBHOOK_SECRET=emulator-not-used"
+          } > functions/.secret.local
+
+      # emulators:exec starts the emulators, runs the command, then stops them.
+      # AI and payments run in test mode there (no Google AI, no Razorpay, no cost).
+      - name: Run the automated tests on the emulators
+        run: >
+          npx firebase emulators:exec --project demo-vaultdoc --only auth,firestore,storage,functions
+          "npm run emulators:seed && npm run test:ai && npm run test:pro && npm run test:payments"
