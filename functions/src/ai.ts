@@ -138,12 +138,40 @@ async function documentBlock(item: Item, withCitations: boolean): Promise<Anthro
   return { type: "document", title: item.name, source: { type: "base64", media_type: "application/pdf", data: pdf.toString("base64") }, citations: { enabled: withCitations }, ...cache };
 }
 
-/** Keeps every request in Haiku's lower price tier, and tells the user plainly when a file is too long. */
-async function checkSize(system: string, messages: Anthropic.MessageParam[]) {
-  const { input_tokens } = await anthropic().messages.countTokens({ model: MODEL, system, messages });
-  if (input_tokens > MAX_DOC_TOKENS) {
-    throw new HttpsError("failed-precondition", "This document is too long for AI right now (about 60 pages is the limit). Try a shorter part of it.");
+const MAX_PDF_PAGES = 60;
+const TOO_LONG = "This document is too long for AI right now (about 60 pages is the limit). Try a shorter part of it.";
+
+/** Rough size without a network call: PDF page count, or about 4 characters per token for text. */
+function estimateTooLong(messages: Anthropic.MessageParam[]): boolean {
+  for (const m of messages) {
+    if (typeof m.content === "string") continue;
+    for (const block of m.content) {
+      if (block.type !== "document") continue;
+      if (block.source.type === "text" && block.source.data.length / 4 > MAX_DOC_TOKENS) return true;
+      if (block.source.type === "base64") {
+        const pages = Buffer.from(block.source.data, "base64").toString("latin1").match(/\/Type\s*\/Page(?![a-z])/g)?.length ?? 0;
+        if (pages > MAX_PDF_PAGES) return true;
+      }
+    }
   }
+  return false;
+}
+
+/**
+ * Keeps every request in Haiku's lower price tier, and tells the user plainly when a file is too long.
+ * Vertex AI gives new projects no token-counting quota (and it adds seconds), so there the estimate is used;
+ * the Claude API counts exactly, falling back to the estimate if counting fails.
+ */
+async function checkSize(system: string, messages: Anthropic.MessageParam[]) {
+  let tooLong = estimateTooLong(messages);
+  if (PROVIDER === "anthropic") {
+    try {
+      tooLong = (await anthropic().messages.countTokens({ model: MODEL, system, messages })).input_tokens > MAX_DOC_TOKENS;
+    } catch (e) {
+      logger.warn("countTokens failed, using estimate", { status: e instanceof Anthropic.APIError ? e.status : null });
+    }
+  }
+  if (tooLong) throw new HttpsError("failed-precondition", TOO_LONG);
 }
 
 const SYSTEM_ASK = `You are VaultDoc's document assistant. You answer questions about ONE document the user stored in their VaultDoc account.
