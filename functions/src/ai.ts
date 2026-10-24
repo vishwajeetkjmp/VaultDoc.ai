@@ -1,5 +1,6 @@
 import "./setup";
 import Anthropic from "@anthropic-ai/sdk";
+import { AnthropicVertex } from "@anthropic-ai/vertex-sdk";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
@@ -21,8 +22,19 @@ import { bumpDaily, istDay } from "./stats";
  *
  * The cheapest capable model, in one place so it can be swapped. Haiku 5.5's price doubles above
  * 100K prompt tokens, so documents are checked against MAX_DOC_TOKENS before being sent.
+ *
+ * Where Claude comes from (functions/.env.<project>, AI_PROVIDER):
+ *   vertex     Claude on Google Cloud Vertex AI, billed on the project's Google Cloud bill; signs in as
+ *              the functions' service account, so no key to manage (needs Vertex AI enabled + the model
+ *              enabled in Model Garden + roles/aiplatform.user)
+ *   anthropic  Claude API directly, with the ANTHROPIC_API_KEY secret
+ * Same model, same requests; only the client differs.
  */
+const PROVIDER = process.env.AI_PROVIDER === "anthropic" ? "anthropic" : "vertex";
+const VERTEX_REGION = process.env.AI_VERTEX_REGION || "global";
 export const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+// The secret is only bound (and required at deploy) when the Anthropic API is used
+const AI_SECRETS = PROVIDER === "anthropic" ? [ANTHROPIC_API_KEY] : [];
 const MODEL = "claude-haiku-5-5";
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_DOC_TOKENS = 90_000;
@@ -33,8 +45,12 @@ const REMINDER_DAYS = [30, 7, 1, 0];
 const FAKE = () => process.env.AI_FAKE === "true"; // emulator tests: canned answers, no API calls, no cost
 
 const db = () => getFirestore();
-let client: Anthropic | undefined;
-const anthropic = () => (client ??= new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() }));
+let client: Anthropic | AnthropicVertex | undefined;
+const anthropic = () =>
+  (client ??=
+    PROVIDER === "anthropic"
+      ? new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() })
+      : new AnthropicVertex({ projectId: process.env.GCLOUD_PROJECT, region: VERTEX_REGION }));
 
 // ---------- Who's asking, consent, quota ----------
 
@@ -208,7 +224,7 @@ type AskInput = { itemId?: unknown; question?: unknown; history?: unknown };
 type Citation = { page?: number; text: string };
 
 /** A question about one file. Streams the answer as it's written; returns it with page citations. */
-export const aiAsk = onCall({ secrets: [ANTHROPIC_API_KEY], memory: "1GiB", timeoutSeconds: 120 }, async (request, response) => {
+export const aiAsk = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSeconds: 120 }, async (request, response) => {
   const { uid, user } = await caller(request);
   const data = (request.data ?? {}) as AskInput;
   const question = typeof data.question === "string" ? data.question.trim().slice(0, MAX_QUESTION_CHARS) : "";
@@ -281,7 +297,7 @@ export const aiAsk = onCall({ secrets: [ANTHROPIC_API_KEY], memory: "1GiB", time
 });
 
 /** "Summary + key details" for a file. Saved, so opening it again is free. Counts as one question. */
-export const aiAnalyze = onCall({ secrets: [ANTHROPIC_API_KEY], memory: "1GiB", timeoutSeconds: 120 }, async (request) => {
+export const aiAnalyze = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSeconds: 120 }, async (request) => {
   const { uid, user } = await caller(request);
   const item = await getItem(uid, (request.data as { itemId?: unknown })?.itemId);
   const q = await useQuestion(uid, await dailyLimit(user));
