@@ -57,11 +57,13 @@ gcloud iam workload-identity-pools providers create-oidc vaultdoc-repo \
   --attribute-condition="assertion.repository=='$REPO'"
 ```
 
-Let only the `production` environment of the repo act as the robot:
+Let only jobs in the `production` environment act as the robot (the provider above already limits
+tokens to this repo; `production` needs your approval and only allows main). Wait a minute after
+creating the service account, or this says it doesn't exist:
 
 ```bash
 gcloud iam service-accounts add-iam-policy-binding $SA --role=roles/iam.workloadIdentityUser \
-  --member="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/subject/repo:$REPO:environment:production"
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.environment/production"
 ```
 
 Print the two values GitHub needs:
@@ -95,8 +97,15 @@ Merge `.github/workflows/deploy.yml` into main. CI runs; when it passes, the Act
 
 ## If something fails
 
-- `Permission 'iam.serviceAccounts.getAccessToken' denied` / `unauthorized_client`: the job isn't in the
-  `production` environment, or the repo name in step 1 doesn't match exactly (case matters).
+- `Permission 'iam.serviceAccounts.getAccessToken' denied` (in "Sign in to Google Cloud"): the
+  `workloadIdentityUser` binding is missing (re-run that command, wait 1–2 minutes, Re-run jobs), or the job
+  isn't in the `production` environment. Check with
+  `gcloud iam service-accounts get-iam-policy github-deployer@vaultdoc-ai.iam.gserviceaccount.com`.
+  (This is what happened on the first deploy, 24 Oct 2026.)
+- `unauthorized_client`: the token came from another repo, or the repo name in the provider's condition
+  doesn't match exactly (case matters).
+- `Failed to authenticate, have you run firebase login?`: Firebase hides the Google error; the sign-in step
+  uses `token_format: access_token` so the real reason shows there instead.
 - `403 ... firebasehosting`: the robot is missing `roles/firebasehosting.admin`.
 - Org policy errors when creating the pool or the service account: the nitp.ac.in organisation blocks it;
   ask its admin or move the project to a personal account.
