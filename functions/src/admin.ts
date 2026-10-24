@@ -6,6 +6,7 @@ import { logger } from "firebase-functions/v2";
 import { defineString } from "firebase-functions/params";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 import { wipeAccount } from "./accounts";
+import { aiLimits, aiUserUsage } from "./ai";
 import { convertUsage, converterHealth, RATE_LIMIT_PER_HOUR, resetConvertLimit } from "./convert";
 import { APP_URL, RESEND_API_KEY, sendMail } from "./email";
 import { deleteSharesOfUser } from "./shares";
@@ -23,6 +24,7 @@ import { computeStats, CurrentStats, istDay } from "./stats";
  *   adminRoles/{uid}   who has which role (mirror of the custom claims, for the Team page)
  *   adminAudit/{id}    every admin change
  *   stats/current      totals for the Overview (see stats.ts)
+ *   AI limits and costs come from config/limits, aiMonthly and statsDaily (see ai.ts)
  */
 
 // The one email allowed to claim the first Owner role (set in functions/.env.<project>)
@@ -167,12 +169,15 @@ const actions: Record<string, Handler> = {
     if (typeof data.uid !== "string") throw new HttpsError("invalid-argument", "Which user?");
     const user = await getAuth().getUser(data.uid).catch(() => null);
     if (!user) throw new HttpsError("not-found", "That user doesn't exist.");
-    const [[row], shares, vault, conversions, limits] = await Promise.all([
+    const [[row], shares, vault, conversions, limits, ai, ailimits, usage] = await Promise.all([
       userRows([user]),
       db().collection("shares").where("ownerUid", "==", user.uid).count().get(),
       db().doc(`users/${user.uid}/vault/meta`).get(),
       convertUsage(user.uid),
       db().doc("config/limits").get(),
+      aiUserUsage(user.uid),
+      aiLimits(),
+      db().doc(`users/${user.uid}`).get(),
     ]);
     return {
       user: row,
@@ -181,6 +186,11 @@ const actions: Record<string, Handler> = {
       conversionsThisHour: conversions,
       conversionLimit: RATE_LIMIT_PER_HOUR,
       defaultQuotaBytes: Number(limits.get("quotaBytes")) || 1024 ** 3,
+      aiEnabled: usage.get("aiEnabled") === true,
+      aiUsedToday: ai.today.questions,
+      aiUsage: ai,
+      aiDailyLimit: Number.isFinite(Number(usage.get("aiDailyLimit"))) && usage.get("aiDailyLimit") !== undefined ? Number(usage.get("aiDailyLimit")) : null,
+      defaultAiDailyLimit: ailimits.defaultDaily,
     };
   },
 
@@ -221,6 +231,13 @@ const actions: Record<string, Handler> = {
         details = { quotaGb: gb };
         break;
       }
+      case "setAiLimit": {
+        const n = data.aiDailyLimit === null ? null : Number(data.aiDailyLimit);
+        if (n !== null && (!Number.isInteger(n) || n < 0 || n > 500)) throw new HttpsError("invalid-argument", "AI limit must be a whole number from 0 to 500.");
+        await db().doc(`users/${user.uid}`).set({ aiDailyLimit: n === null ? FieldValue.delete() : n }, { merge: true });
+        details = { aiDailyLimit: n };
+        break;
+      }
       case "resetToolLimit":
         await resetConvertLimit(user.uid);
         break;
@@ -236,6 +253,50 @@ const actions: Record<string, Handler> = {
     await audit(actor, `user.${action}`, reason, target, details);
     logger.info("Admin action", { actor: actor.email, action, target: user.uid });
     return { ok: true, ...(details ?? {}) };
+  },
+
+  /** AI page: the limits, cost today and this month, and this month's biggest users. */
+  async aiOverview(request) {
+    requireRole(request, "viewer");
+    const month = istDay().slice(0, 7);
+    const [limits, days, top] = await Promise.all([
+      aiLimits(),
+      db().collection("statsDaily").where("day", ">=", `${month}-01`).get(),
+      db().collection("aiMonthly").where("month", "==", month).orderBy("costMicroUsd", "desc").limit(25).get(),
+    ]);
+    const sum = (pick: (d: FirebaseFirestore.QueryDocumentSnapshot) => number) => days.docs.reduce((n, d) => n + pick(d), 0);
+    const questions = (d: FirebaseFirestore.DocumentSnapshot) => (Number(d.get("aiQuestions")) || 0) + (Number(d.get("aiAnalyses")) || 0);
+    const today = days.docs.find((d) => d.id === istDay());
+    const uids = top.docs.map((d) => d.get("uid") as string);
+    const accounts = uids.length ? (await getAuth().getUsers(uids.map((uid) => ({ uid })))).users : [];
+    const emailOf = new Map(accounts.map((u) => [u.uid, u.email ?? u.uid]));
+    return {
+      limits,
+      month,
+      today: { questions: today ? questions(today) : 0, costMicroUsd: Number(today?.get("aiCostMicroUsd")) || 0 },
+      thisMonth: { questions: sum(questions), costMicroUsd: sum((d) => Number(d.get("aiCostMicroUsd")) || 0), users: top.size },
+      topUsers: top.docs.map((d) => ({
+        uid: d.get("uid"),
+        email: emailOf.get(d.get("uid")) ?? "deleted account",
+        questions: d.get("questions") ?? 0,
+        inputTokens: d.get("inputTokens") ?? 0,
+        outputTokens: d.get("outputTokens") ?? 0,
+        costMicroUsd: d.get("costMicroUsd") ?? 0,
+      })),
+    };
+  },
+
+  /** Owner: questions per user per day for everyone, and an optional cap on everyone together (0 pauses AI). */
+  async setAiLimits(request, data) {
+    const actor = requireRole(request, "owner");
+    const reason = reasonOf(data);
+    const def = Number(data.defaultDaily);
+    if (!Number.isInteger(def) || def < 0 || def > 500) throw new HttpsError("invalid-argument", "Questions per user must be a whole number from 0 to 500.");
+    const global = data.globalDaily === null ? null : Number(data.globalDaily);
+    if (global !== null && (!Number.isInteger(global) || global < 0 || global > 1_000_000)) throw new HttpsError("invalid-argument", "The daily cap must be a whole number, or empty for no cap.");
+    await db().doc("config/limits").set({ aiDailyQuestions: def, aiGlobalDailyQuestions: global === null ? FieldValue.delete() : global }, { merge: true });
+    await audit(actor, "ai.setLimits", reason, undefined, { defaultDaily: def, globalDaily: global });
+    return { ok: true };
   },
 
   /** Shares table without file names (privacy). Newest first, 50 per page. */

@@ -6,9 +6,14 @@ import TimeChart from "../components/TimeChart";
 import { Card, Stat } from "../components/ui";
 import { useAdmin } from "../components/AdminProvider";
 import { adminApi, errorText, type CurrentStats, type DayStats } from "../lib/api";
-import { ago, bytes, num } from "../lib/format";
+import { ago, bytes, inr, num } from "../lib/format";
 
 type Overview = { current: CurrentStats; days: DayStats[] };
+
+// Days before cost tracking (24 Oct 2026) only have token counts: estimate them at Gemini 3.1 Flash-Lite prices
+const AI_PRICE = { input: 0.25, cached: 0.025, output: 1.5 };
+const aiCostMicroUsd = (d?: DayStats) =>
+  !d ? 0 : (d.aiCostMicroUsd ?? (d.aiInputTokens ?? 0) * AI_PRICE.input + (d.aiCachedTokens ?? 0) * AI_PRICE.cached + (d.aiOutputTokens ?? 0) * AI_PRICE.output);
 
 /** Last 30 days, filling missing days with 0 so the chart has no gaps. */
 function series(days: DayStats[], pick: (d: DayStats) => number | undefined, carry = false) {
@@ -67,6 +72,13 @@ export default function OverviewPage() {
         <Stat label="Storage used" value={c ? bytes(c.storageBytes) : "—"} note={c && `${num(c.files)} files`} />
         <Stat label="Active share links" value={c ? num(c.sharesActive) : "—"} note={today ? `${num(today.shareOpens ?? 0)} opens today` : "opens today: 0"} />
         <Stat label="Word conversions today" value={num(today?.conversions ?? 0)} note="Word and DOC to PDF" />
+        <Stat
+          label="AI questions today"
+          value={num((today?.aiQuestions ?? 0) + (today?.aiAnalyses ?? 0))}
+          note={`${inr(aiCostMicroUsd(today))} today · ${inr(days.reduce((s, d) => s + aiCostMicroUsd(d), 0))} in 30 days`}
+        />
+        <Stat label="Reminder emails" value={num(days.reduce((s, d) => s + (d.remindersSent ?? 0), 0))} note="sent in the last 30 days" />
+        <Stat label="Invite emails" value={num(days.reduce((s, d) => s + (d.inviteEmails ?? 0), 0))} note="sent in the last 30 days" />
       </div>
 
       <div className="grid two" style={{ marginTop: 16 }}>
@@ -78,6 +90,9 @@ export default function OverviewPage() {
         </Card>
         <Card title="Word conversions" subtitle="Word and DOC to PDF per day">
           {data ? <TimeChart points={series(days, (d) => d.conversions)} label="Conversions per day" format={(n) => num(Math.round(n))} /> : <div className="skeleton" style={{ height: 180 }} />}
+        </Card>
+        <Card title="AI questions" subtitle="Questions and summaries per day">
+          {data ? <TimeChart points={series(days, (d) => (d.aiQuestions ?? 0) + (d.aiAnalyses ?? 0) || undefined)} label="AI questions per day" format={(n) => num(Math.round(n))} /> : <div className="skeleton" style={{ height: 180 }} />}
         </Card>
         <Card title="Shared link opens" subtitle="Views of shared files and folders per day">
           {data ? <TimeChart points={series(days, (d) => d.shareOpens)} label="Share opens per day" format={(n) => num(Math.round(n))} /> : <div className="skeleton" style={{ height: 180 }} />}

@@ -7,6 +7,8 @@ rules_version = '2';
 //   users/{uid}/vault/meta          Secure Vault: vault key wrapped by the recovery key
 //   users/{uid}/vaultItems/{itemId} Secure Vault: encrypted file/folder record
 //   shares/{linkId}                 a shared My Space item; written only by Cloud Functions
+//   users/{uid}/aiInsights/{itemId} AI summary of a file; written only by Cloud Functions
+//   users/{uid}/reminders/{id}      deadline reminders the user confirmed (emailed by a Cloud Function)
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -41,7 +43,33 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['usedBytes', 'fileCount', 'createdAt'])
         && request.resource.data.usedBytes == 0
         && request.resource.data.fileCount == 0;
-      allow update, delete: if false;
+      // The user may switch AI on or off (consent); everything else is written by Cloud Functions
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['aiEnabled', 'aiConsentAt'])
+        && request.resource.data.aiEnabled is bool
+        && request.resource.data.aiConsentAt == request.time;
+      allow delete: if false;
+
+      // AI summaries of files: the owner reads them; only Cloud Functions write
+      match /aiInsights/{itemId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      // Deadline reminders: created and deleted by the owner (no edits; delete and add again)
+      match /reminders/{reminderId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['itemId', 'itemName', 'label', 'date', 'nextNotifyAt', 'createdAt'])
+          && request.resource.data.itemId is string
+          && request.resource.data.itemName is string && request.resource.data.itemName.size() <= 255
+          && request.resource.data.label is string && request.resource.data.label.size() > 0 && request.resource.data.label.size() <= 120
+          && request.resource.data.date is string && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && (request.resource.data.nextNotifyAt == null || request.resource.data.nextNotifyAt is timestamp)
+          && request.resource.data.createdAt == request.time
+          && exists(/databases/$(database)/documents/users/$(uid)/items/$(request.resource.data.itemId));
+        allow update: if false;
+      }
 
       // Internal bookkeeping for Cloud Functions
       match /_events/{eventId} {

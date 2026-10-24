@@ -64,4 +64,19 @@ export type DayStats = {
   shareOpens?: number;
   shareDownloads?: number;
   inviteEmails?: number;
+  aiQuestions?: number;
+  aiAnalyses?: number;
+  aiInputTokens?: number;
+  aiCachedTokens?: number;
+  aiOutputTokens?: number;
+  aiCostMicroUsd?: number;
+  remindersSent?: number;
+};
+export type AiCost = { questions: number; costMicroUsd: number };
+export type AiOverview = {
+  limits: { defaultDaily: number; globalDaily: number | null };
+  month: string;
+  today: AiCost;
+  thisMonth: AiCost & { users: number };
+  topUsers: { uid: string; email: string; questions: number; inputTokens: number; outputTokens: number; costMicroUsd: number }[];
 };

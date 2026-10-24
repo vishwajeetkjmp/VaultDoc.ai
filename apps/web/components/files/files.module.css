@@ -240,6 +240,22 @@
 .button:hover {
   background: var(--hover);
 }
+/* Ask AI: the AI accent (same gradient as the AI panel's spark) so it stands out next to New folder */
+.aiButton {
+  composes: button;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: transparent;
+  background:
+    linear-gradient(var(--bg), var(--bg)) padding-box,
+    linear-gradient(135deg, #7c5cff, #2f80ed) border-box;
+}
+.aiButton:hover {
+  background:
+    linear-gradient(var(--hover), var(--hover)) padding-box,
+    linear-gradient(135deg, #7c5cff, #2f80ed) border-box;
+}
 .primaryButton {
   composes: button;
   background: var(--primary);
@@ -665,6 +681,10 @@
   display: none;
 }
 @media (max-width: 760px) {
+  /* The round + button covers New folder on phones, leaving room for the title and Ask AI */
+  .toolbarNewFolder {
+    display: none;
+  }
   /* My Space only: top bar, section tabs, content (the vault page has no tabs) */
   .withTabs {
     grid-template-rows: 64px auto 1fr;
