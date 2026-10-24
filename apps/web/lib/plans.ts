@@ -52,6 +52,7 @@ export const PLAN_TABS: PlanTab[] = [
           "Folders, search, drag & drop upload",
           "ZIP upload, unpacked into folders",
           "Secure Vault with end-to-end encryption",
+          "Reminders before documents expire",
           "Works on phone and desktop",
         ],
       },
@@ -69,7 +70,6 @@ export const PLAN_TABS: PlanTab[] = [
           "Ask AI across up to 20 files at once",
           "50 AI questions a day",
           "10 GB storage, files up to 50 MB",
-          "Reminders before documents expire",
           "Priority support",
         ],
         highlighted: true,
@@ -94,7 +94,7 @@ export const PLAN_TABS: PlanTab[] = [
   },
   {
     id: "business",
-    label: "Business",
+    label: "Team & Business",
     plans: [
       {
         id: "team",

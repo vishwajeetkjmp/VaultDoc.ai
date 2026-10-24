@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Navbar from "../../components/Navbar";
 import SiteFooter from "../../components/SiteFooter";
+import PricingFaq from "../../components/pricing/PricingFaq";
 import PricingPlans from "../../components/pricing/PricingPlans";
 import styles from "../../components/pricing/pricing.module.css";
 
@@ -14,9 +15,12 @@ export default function PricingPage() {
     <>
       <Navbar />
       <main className={styles.page}>
-        <h1 className={styles.heading}>Pricing</h1>
-        <p className={styles.sub}>Start free. Upgrade when you need AI answers, more space, or a shared vault.</p>
+        <header className={styles.header}>
+          <h1 className={styles.heading}>Pricing</h1>
+          <p className={styles.sub}>Start free. Upgrade when you need AI answers, more space, or a shared vault.</p>
+        </header>
         <PricingPlans />
+        <PricingFaq />
       </main>
       <SiteFooter />
     </>

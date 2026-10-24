@@ -21,6 +21,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeName>("dark");
+  // Tool groups opened in the phone menu (all closed at first)
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -99,75 +101,102 @@ export default function Navbar() {
       </div>
 
       {menuOpen && (
+        // Tools fold into groups so the list stays short; Login / Sign Up stay pinned at the bottom
         <div className={styles.mobilePanel}>
-          {user && (
-            <>
-              <Link href="/dashboard" className={styles.mobileLink}>
-                <MySpaceLabel />
-              </Link>
-              <Link href="/vault" className={styles.mobileLink}>
-                🔐 Secure Vault
-              </Link>
-              <div className={styles.mobileDivider} />
-            </>
-          )}
-          {getToolGroups().map(([group, tools]) => (
-            <div key={group}>
-              <div className={styles.mobileHeading}>{group}</div>
-              {tools.map((tool) =>
-                needsLogin(tool) && !user ? (
-                  // Phones have no hover, so the reason is written next to the locked tool
-                  <span key={tool.id} className={`${styles.mobileLink} ${styles.mobileLinkLocked}`} aria-disabled="true">
-                    <span>
-                      {tool.name}
-                      <LoginMark unlocked={false} />
-                    </span>
-                    <span className={styles.lockedNote}>{LOGIN_TIP}</span>
-                  </span>
-                ) : (
-                  <Link key={tool.id} href={tool.route} className={styles.mobileLink}>
-                    <span>
-                      {tool.name}
-                      {needsLogin(tool) && <LoginMark unlocked />}
-                    </span>
-                    {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
-                  </Link>
-                ),
-              )}
+          <div className={styles.mobileBody}>
+            {user && (
+              <>
+                <Link href="/dashboard" className={styles.mobileLink}>
+                  <MySpaceLabel />
+                </Link>
+                <Link href="/vault" className={styles.mobileLink}>
+                  🔐 Secure Vault
+                </Link>
+                <div className={styles.mobileDivider} />
+              </>
+            )}
+            {getToolGroups().map(([group, tools]) => {
+              const open = openGroups.includes(group);
+              const id = `menu-${group.replace(/\W+/g, "-").toLowerCase()}`;
+              return (
+                <div key={group}>
+                  <button
+                    type="button"
+                    className={styles.mobileGroup}
+                    aria-expanded={open}
+                    aria-controls={id}
+                    onClick={() => setOpenGroups((g) => (open ? g.filter((x) => x !== group) : [...g, group]))}
+                  >
+                    <svg className={open ? styles.chevronOpen : styles.chevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="m9 6 6 6-6 6" />
+                    </svg>
+                    {group}
+                    <span className={styles.mobileCount}>{tools.length}</span>
+                  </button>
+                  {open && (
+                    <ul id={id} className={styles.mobileToolList}>
+                      {tools.map((tool) => (
+                        <li key={tool.id}>
+                          {needsLogin(tool) && !user ? (
+                            // Phones have no hover, so the reason is written next to the locked tool
+                            <span className={`${styles.mobileTool} ${styles.mobileLinkLocked}`} aria-disabled="true">
+                              <span>
+                                {tool.name}
+                                <LoginMark unlocked={false} />
+                              </span>
+                              <span className={styles.lockedNote}>{LOGIN_TIP}</span>
+                            </span>
+                          ) : (
+                            <Link href={tool.route} className={styles.mobileTool}>
+                              <span>
+                                {tool.name}
+                                {needsLogin(tool) && <LoginMark unlocked />}
+                              </span>
+                              {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
+                            </Link>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+            <div className={styles.mobileDivider} />
+            <Link href="/pricing" className={styles.mobileLink}>
+              Pricing
+            </Link>
+            <Link href="/about" className={styles.mobileLink}>
+              About
+            </Link>
+            <div className={styles.mobileDivider} />
+            <div className={styles.mobileHeading}>Theme</div>
+            <div className={styles.mobileThemes}>
+              {THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  className={t.id === theme ? styles.mobileThemeActive : styles.mobileTheme}
+                  aria-pressed={t.id === theme}
+                  onClick={() => {
+                    applyTheme(t.id);
+                    setTheme(t.id);
+                  }}
+                >
+                  <span className={styles.mobileSwatch} style={{ background: t.bg, borderColor: t.accent }} aria-hidden />
+                  {t.label}
+                </button>
+              ))}
             </div>
-          ))}
-          <div className={styles.mobileDivider} />
-          <Link href="/pricing" className={styles.mobileLink}>
-            Pricing
-          </Link>
-          <Link href="/about" className={styles.mobileLink}>
-            About
-          </Link>
-          <div className={styles.mobileDivider} />
-          <div className={styles.mobileHeading}>Theme</div>
-          <div className={styles.mobileThemes}>
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                className={t.id === theme ? styles.mobileThemeActive : styles.mobileTheme}
-                aria-pressed={t.id === theme}
-                onClick={() => {
-                  applyTheme(t.id);
-                  setTheme(t.id);
-                }}
-              >
-                <span className={styles.mobileSwatch} style={{ background: t.bg, borderColor: t.accent }} aria-hidden />
-                {t.label}
-              </button>
-            ))}
           </div>
-          {!user && (
-            <>
-              <div className={styles.mobileDivider} />
-              <Link href={withNext("/login", pathname)} className={styles.mobileLink}>
+          {!user && !loading && (
+            <div className={styles.mobileAuth}>
+              <Link href={withNext("/login", pathname)} className={styles.mobileLogin}>
                 Login
               </Link>
-            </>
+              <Link href={withNext("/signup", pathname)} className={styles.mobileSignUp}>
+                Sign Up
+              </Link>
+            </div>
           )}
         </div>
       )}
