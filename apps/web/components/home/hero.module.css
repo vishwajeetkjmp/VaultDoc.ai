@@ -1,0 +1,103 @@
+/*
+ * Home hero. Laptops: the robot-and-vault animation plays faded behind the headline.
+ * Phones (small screens): the animation gets its own row, with the headline and text below it,
+ * so the screen stays clean.
+ */
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.badgeRow {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 100px 24px 0;
+}
+.badge {
+  display: inline-block;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+/* Laptops: covers the whole hero behind the text, faded so the headline stays easy to read */
+.animation {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+  pointer-events: none;
+}
+.copy {
+  position: relative;
+  z-index: 1;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 24px 0;
+  text-align: center;
+}
+.title {
+  font-size: clamp(34px, 7vw, 52px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0 0 20px;
+  letter-spacing: -1px;
+}
+.lead {
+  font-size: 19px;
+  color: var(--text-muted);
+  max-width: 620px;
+  margin: 0 auto;
+}
+.actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 36px 24px 80px;
+}
+.primary,
+.secondary {
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 10px;
+}
+.primary {
+  background: var(--primary);
+  color: #fff;
+}
+.secondary {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* Phones: label, animation row, then headline and text, then buttons */
+@media (max-width: 760px) {
+  .badgeRow {
+    order: 0;
+    padding-top: 28px;
+  }
+  .animation {
+    order: 1;
+    position: relative;
+    inset: auto;
+    opacity: 0.92;
+    margin-top: 4px;
+  }
+  .copy {
+    order: 2;
+    padding-top: 12px;
+  }
+  .actions {
+    order: 3;
+    padding-bottom: 48px;
+  }
+}

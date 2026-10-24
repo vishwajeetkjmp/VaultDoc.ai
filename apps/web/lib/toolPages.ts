@@ -26,7 +26,7 @@ export type ToolPage = ToolKind & {
   related: string[];
   /** Runs fully in the browser (shown as a privacy promise) */
   local: boolean;
-  /** Only logged-in users with a verified email can use it (server tools cost money to run) */
+  /** Only logged-in users with a verified email can use it (server tools cost money to run; some others are account perks) */
   loginRequired?: boolean;
 };
 
@@ -129,24 +129,31 @@ export const TOOL_PAGES: Record<string, ToolPage> = {
     related: ["reorder-pdf-pages", "remove-pdf-pages", "jpg-to-pdf"],
     local: true,
   },
-  "reorder-pdf-pages": organize(
-    "reorder",
-    "Reorder PDF pages",
-    "See every page and drag them into the order you want.",
-    "Rearrange PDF pages by dragging thumbnails. Free, fast, and your PDF never leaves your device.",
-  ),
+  // Free with an account (like Word and DOC to PDF), though they run in the browser
+  "reorder-pdf-pages": {
+    ...organize(
+      "reorder",
+      "Reorder PDF pages",
+      "See every page and drag them into the order you want.",
+      "Rearrange PDF pages by dragging thumbnails. Free with an account, and your PDF never leaves your device.",
+    ),
+    loginRequired: true,
+  },
   "rotate-pdf": organize(
     "rotate",
     "Rotate PDF pages",
     "Fix sideways or upside-down pages: rotate one page or all of them.",
     "Rotate PDF pages free online. Turn single pages or the whole document. Your PDF never leaves your device.",
   ),
-  "remove-pdf-pages": organize(
-    "remove",
-    "Remove PDF pages",
-    "Select the pages you don't need and download a cleaner PDF.",
-    "Delete pages from a PDF free online. Pick pages visually and download. Your PDF never leaves your device.",
-  ),
+  "remove-pdf-pages": {
+    ...organize(
+      "remove",
+      "Remove PDF pages",
+      "Select the pages you don't need and download a cleaner PDF.",
+      "Delete pages from a PDF free with an account. Pick pages visually and download. Your PDF never leaves your device.",
+    ),
+    loginRequired: true,
+  },
   "resize-crop-image": {
     kind: "image-edit",
     accept: IMAGE_ACCEPT,

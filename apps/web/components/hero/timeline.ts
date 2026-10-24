@@ -5,11 +5,11 @@
  */
 export const LOOP_SECONDS = 10;
 
-/** Height of the animation strip, centred behind the hero text. */
-export const HERO_ANIMATION_HEIGHT = "clamp(260px, 42vw, 320px)";
+/** Height of the animation strip (behind the text on laptops, its own row on phones). */
+export const HERO_ANIMATION_HEIGHT = "clamp(190px, 30vw, 320px)";
 
-/** How visible the animation is behind the text (1 = fully). */
-export const HERO_ANIMATION_OPACITY = 0.35;
+/** The strip itself is drawn at full strength; components/home/hero.module.css fades it per layout. */
+export const HERO_ANIMATION_OPACITY = 1;
 
 export const T = {
   walkInEnd: 0.34, // robot arrives at the vault with the files
