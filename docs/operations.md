@@ -55,6 +55,7 @@ Also: **Error Reporting** (console → Error Reporting) → **Configure notifica
 After go-live, add an uptime check for the website: Monitoring → Uptime checks → Create → URL of the site, every 5 min, alert to "VaultDoc alerts".
 
 ## Day to day
+- **Deploying the website and admin**: merge to main, then approve in GitHub (see `docs/deploy-pipeline.md`).
 - **Admin → Overview**: sign-ups, active users, storage, shares, conversions (numbers refresh hourly; **Refresh** recalculates now).
 - **Admin → System**: live checks of database, storage, logins, converter and email, plus links to Error Reporting, logs, alerts, Cloud Run and billing.
 - Website crashes are reported automatically (`reportClientError` → Error Reporting, service "website").
