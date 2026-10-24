@@ -66,7 +66,11 @@ export default function Navbar() {
           About
         </Link>
         {showMySpace && (
-          <Link href="/dashboard" className={styles.link} style={{ visibility: user ? "visible" : "hidden" }}>
+          <Link
+            href="/dashboard"
+            className={pathname.startsWith("/dashboard") ? `${styles.mySpace} ${styles.mySpaceActive}` : styles.mySpace}
+            style={{ visibility: user ? "visible" : "hidden" }}
+          >
             <MySpaceLabel />
           </Link>
         )}
@@ -218,9 +222,16 @@ export default function Navbar() {
   );
 }
 
-/** "My Space": the logged-in user's way into their files. */
+/** "My Space" with a folder icon: the logged-in user's way into their files. */
 function MySpaceLabel() {
-  return <span>My Space</span>;
+  return (
+    <span className={styles.mySpaceLabel}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      </svg>
+      My Space
+    </span>
+  );
 }
 
 /** Small padlock-and-spark mark in the accent colour, shown before the wordmark. */
