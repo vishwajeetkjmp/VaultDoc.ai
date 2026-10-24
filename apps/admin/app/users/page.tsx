@@ -9,8 +9,19 @@ import { ago, bytes, date, num } from "../../lib/format";
 
 type Filter = "all" | "unverified" | "disabled" | "admins";
 type SortKey = "createdAt" | "lastActiveAt" | "usedBytes" | "email";
-type Detail = { user: UserRow; sharesCount: number; vaultSetUp: boolean; conversionsThisHour: number; conversionLimit: number; defaultQuotaBytes: number };
-type Op = "disable" | "enable" | "resendVerification" | "setQuota" | "resetToolLimit" | "stopShares" | "delete";
+type Detail = {
+  user: UserRow;
+  sharesCount: number;
+  vaultSetUp: boolean;
+  conversionsThisHour: number;
+  conversionLimit: number;
+  defaultQuotaBytes: number;
+  aiEnabled: boolean;
+  aiUsedToday: number;
+  aiDailyLimit: number | null;
+  defaultAiDailyLimit: number;
+};
+type Op = "disable" | "enable" | "resendVerification" | "setQuota" | "setAiLimit" | "resetToolLimit" | "stopShares" | "delete";
 
 const provider = (p: string[]) => (p.includes("google.com") ? "Google" : p.includes("password") ? "Email" : p[0] ?? "—");
 
@@ -181,6 +192,7 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
   const [d, setD] = useState<Detail | null>(null);
   const [op, setOp] = useState<Op | null>(null);
   const [quotaGb, setQuotaGb] = useState("");
+  const [aiLimit, setAiLimit] = useState("");
   // The parent recreates these on every render; refs keep the reload below from re-running because of that
   const callbacks = useRef({ onChanged, onClose });
   callbacks.current = { onChanged, onClose };
@@ -199,12 +211,19 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
 
   const run = async (reason: string) => {
     if (!op) return;
-    const r = await adminApi<{ stopped?: number }>("userAction", { uid, op, reason, ...(op === "setQuota" ? { quotaGb: quotaGb === "" ? null : Number(quotaGb) } : {}) });
+    const r = await adminApi<{ stopped?: number }>("userAction", {
+      uid,
+      op,
+      reason,
+      ...(op === "setQuota" ? { quotaGb: quotaGb === "" ? null : Number(quotaGb) } : {}),
+      ...(op === "setAiLimit" ? { aiDailyLimit: aiLimit === "" ? null : Number(aiLimit) } : {}),
+    });
     const done: Record<Op, string> = {
       disable: "Account disabled and signed out everywhere",
       enable: "Account enabled",
       resendVerification: "Verification email sent",
       setQuota: "Storage quota updated",
+      setAiLimit: "AI daily limit updated",
       resetToolLimit: "Conversion limit reset",
       stopShares: `Stopped ${r.stopped ?? 0} shared links`,
       delete: "Account and all its data deleted",
@@ -224,6 +243,14 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
     ? [
         { op: "resendVerification", title: "Resend verification email", text: "Sends a new verification link to their inbox.", label: "Send", min: "support", show: !u.verified && !u.disabled },
         { op: "setQuota", title: "Change storage quota", text: `Currently ${bytes(quota)}${u.quotaBytes ? " (custom)" : " (default)"}.`, label: "Save quota", min: "support", show: true },
+        {
+          op: "setAiLimit",
+          title: "Change AI daily limit",
+          text: `${d!.aiUsedToday} of ${d!.aiDailyLimit ?? d!.defaultAiDailyLimit} AI questions used today${d!.aiDailyLimit !== null ? " (custom limit)" : ""}.`,
+          label: "Change",
+          min: "support",
+          show: true,
+        },
         { op: "resetToolLimit", title: "Reset conversion limit", text: `${d!.conversionsThisHour} of ${d!.conversionLimit} Word conversions used this hour.`, label: "Reset", min: "support", show: d!.conversionsThisHour > 0 },
         { op: "stopShares", title: "Stop all shared links", text: `${d!.sharesCount} active link${d!.sharesCount === 1 ? "" : "s"} will stop working immediately.`, label: "Stop links", danger: true, min: "support", show: d!.sharesCount > 0 },
         u.disabled
@@ -260,6 +287,8 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
             <dd>{num(u.fileCount)}</dd>
             <dt>Shared links</dt>
             <dd>{num(d.sharesCount)}</dd>
+            <dt>AI</dt>
+            <dd>{d.aiEnabled ? `On · ${d.aiUsedToday} of ${d.aiDailyLimit ?? d.defaultAiDailyLimit} used today` : "Off"}</dd>
             <dt>User ID</dt>
             <dd className="mono ellipsis" title={u.uid}>
               {u.uid}
@@ -294,6 +323,7 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
                         className={`btn btnSm ${a.danger ? "btnDanger" : ""}`}
                         onClick={() => {
                           setQuotaGb(u.quotaBytes ? String(Math.round((u.quotaBytes / 1024 ** 3) * 10) / 10) : "");
+                          setAiLimit(d.aiDailyLimit !== null ? String(d.aiDailyLimit) : "");
                           setOp(a.op);
                         }}
                       >
@@ -315,7 +345,10 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
           text={current.text}
           confirmLabel={current.label}
           danger={current.danger}
-          ready={op !== "setQuota" || quotaGb === "" || (Number(quotaGb) >= 0.1 && Number(quotaGb) <= 1000)}
+          ready={
+            (op !== "setQuota" || quotaGb === "" || (Number(quotaGb) >= 0.1 && Number(quotaGb) <= 1000)) &&
+            (op !== "setAiLimit" || aiLimit === "" || (Number.isInteger(Number(aiLimit)) && Number(aiLimit) >= 0 && Number(aiLimit) <= 500))
+          }
           extra={
             op === "setQuota" ? (
               <label style={{ display: "grid", gap: 6 }}>
@@ -323,6 +356,13 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
                   Quota in GB <span className="muted">(empty = default {bytes(d?.defaultQuotaBytes ?? 0)})</span>
                 </span>
                 <input className="input" type="number" min={0.1} max={1000} step={0.1} value={quotaGb} onChange={(e) => setQuotaGb(e.target.value)} />
+              </label>
+            ) : op === "setAiLimit" ? (
+              <label style={{ display: "grid", gap: 6 }}>
+                <span className="small" style={{ fontWeight: 600 }}>
+                  AI questions per day <span className="muted">(empty = default {d?.defaultAiDailyLimit}; 0 = no AI)</span>
+                </span>
+                <input className="input" type="number" min={0} max={500} step={1} value={aiLimit} onChange={(e) => setAiLimit(e.target.value)} />
               </label>
             ) : undefined
           }

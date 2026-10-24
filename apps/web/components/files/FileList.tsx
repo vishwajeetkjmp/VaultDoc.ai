@@ -36,10 +36,11 @@ type Props = {
   /** Items that are shared (show a small people icon) */
   sharedIds?: Set<string>;
   onShare?: (item: Item) => void;
+  onAskAi?: (item: Item) => void;
   emptyState: React.ReactNode;
 };
 
-export default function FileList({ items, pendingIds, loading, searching, onOpen, onMenu, onDelete, onRename, sharedIds, onShare, emptyState }: Props) {
+export default function FileList({ items, pendingIds, loading, searching, onOpen, onMenu, onDelete, onRename, sharedIds, onShare, onAskAi, emptyState }: Props) {
   const [sort, setSort] = useState<Sort>({ key: "name", dir: 1 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
@@ -71,6 +72,7 @@ export default function FileList({ items, pendingIds, loading, searching, onOpen
     else if (selected && (e.key === "Delete" || e.key === "Backspace")) onDelete(selected);
     else if (selected && e.key === "F2") onRename(selected);
     else if (selected && onShare && (e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey) onShare(selected);
+    else if (selected && onAskAi && (e.key === "a" || e.key === "A") && !e.metaKey && !e.ctrlKey) onAskAi(selected);
     else return;
     e.preventDefault();
   };

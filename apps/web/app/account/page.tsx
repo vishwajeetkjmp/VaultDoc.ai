@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import type { User } from "firebase/auth";
 import { RequireAuth, useAuth } from "../../components/AuthProvider";
 import Avatar from "../../components/Avatar";
@@ -9,6 +10,8 @@ import StorageMeter from "../../components/files/StorageMeter";
 import styles from "../../components/site.module.css";
 import { confirmIdentity, deleteMyAccount, usesGoogle, usesPassword } from "../../lib/account";
 import { getDisplayName } from "../../lib/profile";
+
+const AiSetting = dynamic(() => import("../../components/files/AiSetting"), { ssr: false });
 
 export default function AccountPage() {
   return (
@@ -54,6 +57,13 @@ function Account() {
           <div className={styles.card}>
             <StorageMeter uid={user.uid} />
           </div>
+        </section>
+      )}
+
+      {user.emailVerified && (
+        <section className={styles.section}>
+          <h2 className={styles.h2}>AI</h2>
+          <AiSetting uid={user.uid} />
         </section>
       )}
 

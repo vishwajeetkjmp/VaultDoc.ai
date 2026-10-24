@@ -27,6 +27,7 @@ const LABELS: Record<string, string> = {
   "user.enable": "Enabled account",
   "user.resendVerification": "Resent verification",
   "user.setQuota": "Changed quota",
+  "user.setAiLimit": "Changed AI limit",
   "user.resetToolLimit": "Reset conversion limit",
   "user.stopShares": "Stopped user's links",
   "user.delete": "Deleted account",

@@ -64,4 +64,10 @@ export type DayStats = {
   shareOpens?: number;
   shareDownloads?: number;
   inviteEmails?: number;
+  aiQuestions?: number;
+  aiAnalyses?: number;
+  aiInputTokens?: number;
+  aiCachedTokens?: number;
+  aiOutputTokens?: number;
+  remindersSent?: number;
 };

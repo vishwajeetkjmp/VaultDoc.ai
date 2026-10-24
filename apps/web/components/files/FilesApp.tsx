@@ -56,12 +56,20 @@ import UploadPanel from "./UploadPanel";
 const ShareDialog = dynamic(() => import("./ShareDialog"), { ssr: false });
 const SharedByMe = dynamic(() => import("./SharedViews").then((m) => m.SharedByMe), { ssr: false });
 const SharedWithMeList = dynamic(() => import("./SharedViews").then((m) => m.SharedWithMeList), { ssr: false });
+// AI panel and reminders also load only when opened
+const AiPanel = dynamic(() => import("./AiPanel"), { ssr: false });
+const RemindersView = dynamic(() => import("./RemindersView"), { ssr: false });
 
-type View = "files" | "shared" | "with-me";
+// Same list as aiCanRead() in lib/files/ai.ts; kept here so the menu doesn't load the AI code
+const AI_TYPES = /^(application\/pdf|image\/(png|jpeg|webp|gif)|text\/(plain|csv|markdown)|application\/json|application\/(msword|vnd\.openxmlformats-officedocument\.|vnd\.ms-excel|vnd\.ms-powerpoint|rtf))/;
+const aiReadable = (item: Item) => item.kind === "file" && !!item.contentType && AI_TYPES.test(item.contentType);
+
+type View = "files" | "shared" | "with-me" | "reminders";
 
 type DialogState =
   | { type: "newFolder" }
   | { type: "share"; item: Item }
+  | { type: "ai"; item: Item }
   | { type: "rename"; item: Item }
   | { type: "delete"; item: Item }
   | null;
@@ -73,7 +81,7 @@ export default function FilesApp({ user }: { user: User }) {
   const params = useSearchParams();
   const folderId = params.get("folder") ?? ROOT_ID;
   const viewParam = params.get("view");
-  const view: View = viewParam === "shared" || viewParam === "with-me" ? viewParam : "files";
+  const view: View = viewParam === "shared" || viewParam === "with-me" || viewParam === "reminders" ? viewParam : "files";
 
   const account = useStorageAccount(uid);
   const accountRef = useRef(account);
@@ -253,6 +261,7 @@ export default function FilesApp({ user }: { user: User }) {
       } else {
         actions.push({ label: "Download as ZIP", icon: <ZipIcon size={18} />, onSelect: () => downloadZip(item) });
       }
+      if (aiReadable(item)) actions.unshift({ label: "Ask AI", icon: <span aria-hidden style={{ width: 18, textAlign: "center" }}>✨</span>, onSelect: () => setDialog({ type: "ai", item }) });
       actions.push(
         { label: sharedIds.has(item.id) ? "Sharing settings" : "Share", icon: <ShareIcon size={18} />, onSelect: () => setDialog({ type: "share", item }) },
         { label: "Rename", icon: <PencilIcon size={18} />, onSelect: () => setDialog({ type: "rename", item }) },
@@ -348,6 +357,9 @@ export default function FilesApp({ user }: { user: User }) {
         <button aria-current={view === "with-me" ? "page" : undefined} onClick={() => showView("with-me")}>
           Shared with me
         </button>
+        <button aria-current={view === "reminders" ? "page" : undefined} onClick={() => showView("reminders")}>
+          🔔 Reminders
+        </button>
         <Link href="/vault">🔐 Vault</Link>
       </nav>
 
@@ -370,6 +382,10 @@ export default function FilesApp({ user }: { user: User }) {
             <InboxIcon size={18} />
             Shared with me
           </button>
+          <button className={view === "reminders" ? styles.navItem : styles.navLink} onClick={() => showView("reminders")}>
+            <span aria-hidden style={{ width: 18, textAlign: "center" }}>🔔</span>
+            Reminders
+          </button>
           <Link href="/vault" className={styles.navLink}>
             <span aria-hidden>🔐</span>
             Secure Vault
@@ -385,9 +401,15 @@ export default function FilesApp({ user }: { user: User }) {
         {view !== "files" ? (
           <main className={styles.main}>
             <div className={styles.toolbar}>
-              <span className={styles.crumbCurrent}>{view === "shared" ? "Shared by me" : "Shared with me"}</span>
+              <span className={styles.crumbCurrent}>{view === "shared" ? "Shared by me" : view === "reminders" ? "Reminders" : "Shared with me"}</span>
             </div>
-            {view === "shared" ? (
+            {view === "reminders" ? (
+              <RemindersView
+                uid={uid}
+                onToast={showToast}
+                onOpenItem={(itemId) => getItem(uid, itemId).then((item) => (item ? setDialog({ type: "ai", item }) : showToast("This document no longer exists")))}
+              />
+            ) : view === "shared" ? (
               <SharedByMe
                 shares={myShares}
                 loading={sharesLoading}
@@ -443,6 +465,7 @@ export default function FilesApp({ user }: { user: User }) {
             pendingIds={pendingIds}
             sharedIds={sharedIds}
             onShare={(item) => setDialog({ type: "share", item })}
+            onAskAi={(item) => aiReadable(item) && setDialog({ type: "ai", item })}
             loading={loading}
             searching={!!search.trim()}
             onOpen={open}
@@ -484,6 +507,7 @@ export default function FilesApp({ user }: { user: User }) {
 
       {menu && <Menu {...menu} onClose={() => setMenu(null)} />}
 
+      {dialog?.type === "ai" && <AiPanel uid={uid} item={dialog.item} onClose={() => setDialog(null)} />}
       {dialog?.type === "share" && (
         <ShareDialog item={dialog.item} existing={myShares.find((s) => s.itemId === dialog.item.id)} onClose={() => setDialog(null)} onToast={showToast} />
       )}

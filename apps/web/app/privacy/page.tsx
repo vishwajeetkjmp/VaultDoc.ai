@@ -54,14 +54,22 @@ export default function PrivacyPage() {
           <li>To send essential emails, such as verification, password reset and PIN reset links.</li>
         </ul>
         <p>
-          We <b>do not sell</b> your personal data and do not use your documents for advertising. [If AI features
-          are added: describe how documents are processed and whether any third-party AI provider receives them.]
+          We <b>do not sell</b> your personal data and do not use your documents for advertising.
+        </p>
+        <p>
+          <b>AI features (optional).</b> AI is off until you turn it on. When it&apos;s on and you ask about a file in My
+          Space, that one file and your question are sent to our AI provider, <b>Anthropic</b> (Claude), only to produce
+          the answer or summary. Anthropic processes them on our behalf and does not use them to train its models. Saved
+          summaries and the reminders you set are stored with your account. Your <b>Secure Vault</b> is never sent to any
+          AI. You can turn AI off at any time in Account.
         </p>
 
         <h2>3. Where your data is stored</h2>
         <p>
           Your files and records are stored with Google Cloud / Firebase in the <b>asia-south2 (Delhi, India)</b>{" "}
-          region. Google acts as our data processor. Sign-in is handled by Firebase Authentication.
+          region. Google acts as our data processor. Sign-in is handled by Firebase Authentication. If you use AI
+          features, the file you ask about is processed by Anthropic, which may be outside India. Emails (invites,
+          reminders) are sent through Resend.
         </p>
 
         <h2>4. On your device</h2>

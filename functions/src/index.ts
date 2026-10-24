@@ -7,6 +7,7 @@ import { onObjectFinalized } from "firebase-functions/v2/storage";
 import { onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { deletedUserRef, wipeAccount } from "./accounts";
+import { deleteAiDataOfItem } from "./ai";
 import { deleteSharesOfItem } from "./shares";
 
 
@@ -112,6 +113,7 @@ async function cleanUpDeletedFile(uid: string, eventId: string, data: FirebaseFi
 export const onItemDeleted = onDocumentDeleted("users/{uid}/items/{itemId}", async (event) => {
   // A deleted item can't stay shared (folders delete their contents one by one, so each is covered)
   await deleteSharesOfItem(event.params.uid, event.params.itemId);
+  await deleteAiDataOfItem(event.params.uid, event.params.itemId);
   await cleanUpDeletedFile(event.params.uid, event.id, event.data?.data());
 });
 
@@ -143,3 +145,4 @@ export { openShare, revokeShare, saveShare, sharedWithMe, shareFileUrl } from ".
 export { adminApi } from "./admin";
 export { computeStatsHourly } from "./stats";
 export { reportClientError } from "./ops";
+export { aiAnalyze, aiAsk, aiInfo, sendReminders } from "./ai";

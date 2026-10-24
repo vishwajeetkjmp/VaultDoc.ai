@@ -6,6 +6,7 @@ import { logger } from "firebase-functions/v2";
 import { defineString } from "firebase-functions/params";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 import { wipeAccount } from "./accounts";
+import { aiUsedToday } from "./ai";
 import { convertUsage, converterHealth, RATE_LIMIT_PER_HOUR, resetConvertLimit } from "./convert";
 import { APP_URL, RESEND_API_KEY, sendMail } from "./email";
 import { deleteSharesOfUser } from "./shares";
@@ -167,12 +168,14 @@ const actions: Record<string, Handler> = {
     if (typeof data.uid !== "string") throw new HttpsError("invalid-argument", "Which user?");
     const user = await getAuth().getUser(data.uid).catch(() => null);
     if (!user) throw new HttpsError("not-found", "That user doesn't exist.");
-    const [[row], shares, vault, conversions, limits] = await Promise.all([
+    const [[row], shares, vault, conversions, limits, aiUsed, usage] = await Promise.all([
       userRows([user]),
       db().collection("shares").where("ownerUid", "==", user.uid).count().get(),
       db().doc(`users/${user.uid}/vault/meta`).get(),
       convertUsage(user.uid),
       db().doc("config/limits").get(),
+      aiUsedToday(user.uid),
+      db().doc(`users/${user.uid}`).get(),
     ]);
     return {
       user: row,
@@ -181,6 +184,10 @@ const actions: Record<string, Handler> = {
       conversionsThisHour: conversions,
       conversionLimit: RATE_LIMIT_PER_HOUR,
       defaultQuotaBytes: Number(limits.get("quotaBytes")) || 1024 ** 3,
+      aiEnabled: usage.get("aiEnabled") === true,
+      aiUsedToday: aiUsed,
+      aiDailyLimit: Number.isFinite(Number(usage.get("aiDailyLimit"))) && usage.get("aiDailyLimit") !== undefined ? Number(usage.get("aiDailyLimit")) : null,
+      defaultAiDailyLimit: Number(limits.get("aiDailyQuestions")) || 10,
     };
   },
 
@@ -219,6 +226,13 @@ const actions: Record<string, Handler> = {
         if (gb !== null && (!Number.isFinite(gb) || gb < 0.1 || gb > 1000)) throw new HttpsError("invalid-argument", "Quota must be between 0.1 and 1000 GB.");
         await db().doc(`users/${user.uid}`).set({ quotaBytes: gb === null ? FieldValue.delete() : Math.round(gb * 1024 ** 3) }, { merge: true });
         details = { quotaGb: gb };
+        break;
+      }
+      case "setAiLimit": {
+        const n = data.aiDailyLimit === null ? null : Number(data.aiDailyLimit);
+        if (n !== null && (!Number.isInteger(n) || n < 0 || n > 500)) throw new HttpsError("invalid-argument", "AI limit must be a whole number from 0 to 500.");
+        await db().doc(`users/${user.uid}`).set({ aiDailyLimit: n === null ? FieldValue.delete() : n }, { merge: true });
+        details = { aiDailyLimit: n };
         break;
       }
       case "resetToolLimit":

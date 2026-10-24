@@ -37,7 +37,7 @@ const looksLikeDoc = (b: Buffer) => b.length > 8 && b.readUInt32BE(0) === 0xd0cf
 const auth = new GoogleAuth();
 
 /** Calls the converter, with a Google identity token when it's the private Cloud Run service. */
-async function converterFetch(path: string, init: RequestInit = {}) {
+export async function converterFetch(path: string, init: RequestInit = {}) {
   const url = GOTENBERG_URL.value().replace(/\/$/, "");
   const headers: Record<string, string> = url.startsWith("https://")
     ? Object.fromEntries((await (await auth.getIdTokenClient(url)).getRequestHeaders()).entries())
