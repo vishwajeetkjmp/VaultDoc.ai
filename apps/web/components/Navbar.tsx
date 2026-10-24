@@ -11,6 +11,7 @@ import { getToolGroups, isComingSoon, needsPro, toolLock } from "../lib/tools";
 import { usePlan } from "../lib/plan";
 import ProTag from "./ProTag";
 import { applyTheme, getStoredTheme, ThemeName, THEMES } from "../lib/theme";
+import { useInstall } from "../lib/pwa";
 import { withNext } from "../lib/nav";
 import styles from "./navbar.module.css";
 
@@ -21,6 +22,8 @@ export default function Navbar() {
   const showMySpace = !!user || (loading && wasLoggedIn);
   const pathname = usePathname();
   const plan = usePlan();
+  const install = useInstall();
+  const [iosHelp, setIosHelp] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeName>("dark");
   // Tool groups opened in the phone menu (all closed at first)
@@ -181,6 +184,23 @@ export default function Navbar() {
             <Link href="/about" className={styles.mobileLink}>
               About
             </Link>
+            {install.kind !== "none" && (
+              <>
+                <button
+                  type="button"
+                  className={styles.mobileGroup}
+                  onClick={() => (install.kind === "prompt" ? install.install() : setIosHelp((v) => !v))}
+                >
+                  <span aria-hidden>📲</span>
+                  Install the app
+                </button>
+                {install.kind === "ios" && iosHelp && (
+                  <p className={styles.lockedNote} style={{ padding: "0 8px 8px" }}>
+                    In Safari, tap Share ⬆︎ then Add to Home Screen.
+                  </p>
+                )}
+              </>
+            )}
             <div className={styles.mobileDivider} />
             <div className={styles.mobileHeading}>Theme</div>
             <div className={styles.mobileThemes}>

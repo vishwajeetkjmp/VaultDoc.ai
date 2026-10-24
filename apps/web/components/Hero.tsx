@@ -1,6 +1,7 @@
 import Link from "next/link";
 import HeroBackground from "./hero/HeroBackground";
 import HeroPrimaryButton from "./HeroPrimaryButton";
+import InstallSheet from "./InstallSheet";
 import ToolCards from "./home/ToolCards";
 import styles from "./home/hero.module.css";
 
@@ -33,6 +34,7 @@ export default function Hero() {
         </div>
       </section>
       <ToolCards />
+      <InstallSheet />
     </>
   );
 }
