@@ -19,7 +19,12 @@ import { bumpDaily, istDay } from "./stats";
  *   users/{uid}.aiEnabled           the user's consent, set by the user (rules allow only this field)
  *   users/{uid}/aiInsights/{itemId} saved "Summary + key details" for a file (functions write)
  *   users/{uid}/reminders/{id}      deadline reminders the user confirmed (owner writes; job below emails)
- *   aiUsage/{uid}_{day}             questions used today (functions only; expires automatically)
+ *   aiUsage/{uid}_{day}             questions, tokens and cost today (functions only; expires automatically)
+ *   aiMonthly/{uid}_{yyyy-mm}       one user's questions, tokens and cost in a month (admin "top users")
+ *   users/{uid}.aiQuestionsTotal / aiCostMicroUsdTotal   lifetime totals (functions only)
+ *   config/limits.aiDailyQuestions  default questions per user per day (admin can change)
+ *   config/limits.aiGlobalDailyQuestions  optional cap on everyone's questions together per day (0 pauses AI)
+ * Cost is stored in micro-dollars (1 USD = 1,000,000), worked out from PRICES when each answer is saved.
  *
  * The cheapest capable model, in one place so it can be swapped. Documents are kept under
  * MAX_DOC_TOKENS (about 60 pages) so every request stays in the cheap price tier.
@@ -47,6 +52,7 @@ const MAX_HISTORY_TURNS = 6;
 const MAX_QUESTION_CHARS = 1500;
 const REMINDER_DAYS = [30, 7, 1, 0];
 const FAKE = () => process.env.AI_FAKE === "true"; // emulator tests: canned answers, no API calls, no cost
+const FAKE_USAGE = { input: 3000, cached: 0, output: 300 }; // typical 2-page PDF, so cost views show real-looking numbers
 
 const db = () => getFirestore();
 let client: Anthropic | AnthropicVertex | undefined;
@@ -69,17 +75,38 @@ async function caller(request: CallableRequest) {
   return { uid: request.auth.uid, user };
 }
 
-async function dailyLimit(user: FirebaseFirestore.DocumentSnapshot): Promise<number> {
-  const own = Number(user.get("aiDailyLimit"));
-  if (Number.isFinite(own) && own >= 0) return own;
+/** The limits the admin panel sets: questions per user per day, and an optional cap for everyone together. */
+export async function aiLimits(): Promise<{ defaultDaily: number; globalDaily: number | null }> {
   const config = await db().doc("config/limits").get();
-  return Number(config.get("aiDailyQuestions")) || DEFAULT_DAILY_QUESTIONS;
+  const def = Number(config.get("aiDailyQuestions"));
+  const global = config.get("aiGlobalDailyQuestions");
+  return {
+    defaultDaily: Number.isInteger(def) && def >= 0 && config.get("aiDailyQuestions") !== undefined ? def : DEFAULT_DAILY_QUESTIONS,
+    globalDaily: typeof global === "number" && global >= 0 ? global : null,
+  };
+}
+
+async function dailyLimit(user: FirebaseFirestore.DocumentSnapshot, limits?: Awaited<ReturnType<typeof aiLimits>>): Promise<number> {
+  const own = Number(user.get("aiDailyLimit"));
+  if (user.get("aiDailyLimit") !== undefined && Number.isFinite(own) && own >= 0) return own;
+  return (limits ?? (await aiLimits())).defaultDaily;
 }
 
 const usageRef = (uid: string) => db().doc(`aiUsage/${uid}_${istDay()}`);
 
+/** Everyone's AI questions today (from the daily counters). */
+async function questionsToday(): Promise<number> {
+  const day = await db().doc(`statsDaily/${istDay()}`).get();
+  return (Number(day.get("aiQuestions")) || 0) + (Number(day.get("aiAnalyses")) || 0);
+}
+
 /** Takes one question from today's allowance, or refuses. Returns what's left afterwards. */
-async function useQuestion(uid: string, limit: number): Promise<{ used: number; limit: number }> {
+async function useQuestion(uid: string, user: FirebaseFirestore.DocumentSnapshot): Promise<{ used: number; limit: number }> {
+  const limits = await aiLimits();
+  const [limit, everyone] = await Promise.all([dailyLimit(user, limits), limits.globalDaily === null ? 0 : questionsToday()]);
+  if (limits.globalDaily !== null && everyone >= limits.globalDaily) {
+    throw new HttpsError("resource-exhausted", "AI is taking a break for today. Please try again tomorrow.", { reason: "globalQuota" });
+  }
   return db().runTransaction(async (tx) => {
     const ref = usageRef(uid);
     const used = Number((await tx.get(ref)).get("count")) || 0;
@@ -267,8 +294,27 @@ const geminiUsage = (u?: { promptTokenCount?: number; cachedContentTokenCount?: 
   output: (u?.candidatesTokenCount ?? 0) + (u?.thoughtsTokenCount ?? 0),
 });
 
-function recordUsage(kind: "aiQuestions" | "aiAnalyses", usage?: Usage) {
-  return bumpDaily({ [kind]: 1, aiInputTokens: usage?.input ?? 0, aiCachedTokens: usage?.cached ?? 0, aiOutputTokens: usage?.output ?? 0 });
+/** List prices, USD per 1M tokens. Tokens x price = micro-dollars, so costs stay whole numbers. */
+const PRICES: Record<string, { input: number; cached: number; output: number }> = {
+  "gemini-3.1-flash-lite": { input: 0.25, cached: 0.025, output: 1.5 },
+  "claude-haiku-5-5": { input: 0.1, cached: 0.01, output: 0.5 },
+};
+const costMicroUsd = (u: Usage) => {
+  const p = PRICES[MODEL];
+  return Math.round(u.input * p.input + u.cached * p.cached + u.output * p.output);
+};
+
+/** One answered question: today's totals, and this user's day, month and lifetime (admin cost views). */
+function recordUsage(kind: "aiQuestions" | "aiAnalyses", uid: string, usage: Usage = { input: 0, cached: 0, output: 0 }) {
+  const cost = costMicroUsd(usage);
+  const add = { inputTokens: FieldValue.increment(usage.input + usage.cached), outputTokens: FieldValue.increment(usage.output), costMicroUsd: FieldValue.increment(cost) };
+  const month = istDay().slice(0, 7);
+  return Promise.all([
+    bumpDaily({ [kind]: 1, aiInputTokens: usage.input, aiCachedTokens: usage.cached, aiOutputTokens: usage.output, aiCostMicroUsd: cost }),
+    usageRef(uid).set(add, { merge: true }),
+    db().doc(`aiMonthly/${uid}_${month}`).set({ uid, month, questions: FieldValue.increment(1), ...add }, { merge: true }),
+    db().doc(`users/${uid}`).set({ aiQuestionsTotal: FieldValue.increment(1), aiCostMicroUsdTotal: FieldValue.increment(cost) }, { merge: true }),
+  ]).catch((e) => logger.warn("AI usage record failed", e));
 }
 
 // ---------- Callables ----------
@@ -300,12 +346,12 @@ export const aiAsk = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSecond
     .slice(-MAX_HISTORY_TURNS * 2)
     .map((m) => ({ role: m.role, content: m.text.slice(0, 4000) }));
 
-  const q = await useQuestion(uid, await dailyLimit(user));
+  const q = await useQuestion(uid, user);
   try {
     if (FAKE()) {
       const text = `(Test mode) You asked: “${question}”. In “${item.name}”, the answer would appear here.`;
       for (const word of text.split(" ")) await response?.sendChunk(word + " ");
-      await recordUsage("aiQuestions");
+      await recordUsage("aiQuestions", uid, FAKE_USAGE);
       return { text, citations: [{ page: 1, text: "Sample cited text" }], quota: q };
     }
 
@@ -345,7 +391,7 @@ export const aiAsk = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSecond
         await refundQuestion(uid);
         return { text: "I can't help with that question about this document.", citations: [], quota: { ...q, used: q.used - 1 } };
       }
-      await recordUsage("aiQuestions", geminiUsage(usageMetadata));
+      await recordUsage("aiQuestions", uid, geminiUsage(usageMetadata));
       return { text: text.trim(), citations: [], quota: q };
     }
 
@@ -375,7 +421,7 @@ export const aiAsk = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSecond
         else if (c.type === "char_location") citations.push({ text: c.cited_text.slice(0, 300) });
       }
     }
-    await recordUsage("aiQuestions", claudeUsage(final.usage));
+    await recordUsage("aiQuestions", uid, claudeUsage(final.usage));
     // Same page cited twice → show once
     const unique = citations.filter((c, i) => citations.findIndex((x) => x.page === c.page && x.text === c.text) === i);
     return { text: text.trim(), citations: unique.slice(0, 8), quota: q };
@@ -392,7 +438,7 @@ export const aiAsk = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSecond
 export const aiAnalyze = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSeconds: 120 }, async (request) => {
   const { uid, user } = await caller(request);
   const item = await getItem(uid, (request.data as { itemId?: unknown })?.itemId);
-  const q = await useQuestion(uid, await dailyLimit(user));
+  const q = await useQuestion(uid, user);
   try {
     let analysis: Analysis;
     let usage: Usage | undefined;
@@ -406,6 +452,7 @@ export const aiAnalyze = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSe
         amounts: [{ label: "Monthly rent", value: "₹25,000" }],
         dates: [{ label: "Agreement expires", date: soon, kind: "expiry" }],
       };
+      usage = FAKE_USAGE;
     } else {
       // Structured output and citations can't be combined, so this call skips citations
       const doc = await documentBlock(item, false);
@@ -435,7 +482,7 @@ export const aiAnalyze = onCall({ secrets: AI_SECRETS, memory: "1GiB", timeoutSe
       analysis.dates = analysis.dates.filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d.date));
     }
     await db().doc(`users/${uid}/aiInsights/${item.id}`).set({ analysis, itemName: item.name, model: MODEL, createdAt: FieldValue.serverTimestamp() });
-    await recordUsage("aiAnalyses", usage);
+    await recordUsage("aiAnalyses", uid, usage);
     return { analysis, quota: q };
   } catch (e) {
     await refundQuestion(uid);
@@ -502,7 +549,12 @@ export async function deleteAiDataOfItem(uid: string, itemId: string) {
   await Promise.all(reminders.docs.map((d) => d.ref.delete()));
 }
 
-/** Today's AI use for one user (admin panel). */
-export async function aiUsedToday(uid: string): Promise<number> {
-  return Number((await usageRef(uid).get()).get("count")) || 0;
+/** One user's AI use for the admin panel: today, this month and since they joined. */
+export async function aiUserUsage(uid: string) {
+  const [today, month, user] = await Promise.all([usageRef(uid).get(), db().doc(`aiMonthly/${uid}_${istDay().slice(0, 7)}`).get(), db().doc(`users/${uid}`).get()]);
+  return {
+    today: { questions: Number(today.get("count")) || 0, costMicroUsd: Number(today.get("costMicroUsd")) || 0 },
+    month: { questions: Number(month.get("questions")) || 0, costMicroUsd: Number(month.get("costMicroUsd")) || 0 },
+    total: { questions: Number(user.get("aiQuestionsTotal")) || 0, costMicroUsd: Number(user.get("aiCostMicroUsdTotal")) || 0 },
+  };
 }

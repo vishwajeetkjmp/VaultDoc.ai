@@ -4,8 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAdmin } from "../../components/AdminProvider";
 import Shell, { RoleGate } from "../../components/Shell";
 import { ReasonDialog, SkeletonRows, SlideOver, UserCell } from "../../components/ui";
-import { adminApi, can, errorText, type UserRow } from "../../lib/api";
-import { ago, bytes, date, num } from "../../lib/format";
+import { adminApi, can, errorText, type AiCost, type UserRow } from "../../lib/api";
+import { ago, bytes, date, inr, num } from "../../lib/format";
 
 type Filter = "all" | "unverified" | "disabled" | "admins";
 type SortKey = "createdAt" | "lastActiveAt" | "usedBytes" | "email";
@@ -18,6 +18,7 @@ type Detail = {
   defaultQuotaBytes: number;
   aiEnabled: boolean;
   aiUsedToday: number;
+  aiUsage: { today: AiCost; month: AiCost; total: AiCost };
   aiDailyLimit: number | null;
   defaultAiDailyLimit: number;
 };
@@ -44,6 +45,11 @@ function Users() {
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "createdAt", dir: -1 });
   const [openUid, setOpenUid] = useState<string | null>(null);
+  // Opened from another page (AI → top users): /users/?uid=...
+  useEffect(() => {
+    const uid = new URLSearchParams(window.location.search).get("uid");
+    if (uid) setOpenUid(uid);
+  }, []);
   const [loadingMore, setLoadingMore] = useState(false);
 
   const load = useCallback(
@@ -288,7 +294,15 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
             <dt>Shared links</dt>
             <dd>{num(d.sharesCount)}</dd>
             <dt>AI</dt>
-            <dd>{d.aiEnabled ? `On · ${d.aiUsedToday} of ${d.aiDailyLimit ?? d.defaultAiDailyLimit} used today` : "Off"}</dd>
+            <dd>
+              {d.aiEnabled ? `On · ${d.aiUsedToday} of ${d.aiDailyLimit ?? d.defaultAiDailyLimit} used today${d.aiDailyLimit !== null ? " (custom limit)" : ""}` : "Off"}
+              {d.aiUsage.total.questions > 0 && (
+                <div className="muted small">
+                  Cost: {inr(d.aiUsage.today.costMicroUsd)} today · {inr(d.aiUsage.month.costMicroUsd)} this month ({num(d.aiUsage.month.questions)} questions) ·{" "}
+                  {inr(d.aiUsage.total.costMicroUsd)} in total ({num(d.aiUsage.total.questions)})
+                </div>
+              )}
+            </dd>
             <dt>User ID</dt>
             <dd className="mono ellipsis" title={u.uid}>
               {u.uid}

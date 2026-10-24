@@ -9,6 +9,7 @@ import { useAdmin } from "./AdminProvider";
 const NAV: { href: string; label: string; min: Role; icon: string; section?: string }[] = [
   { href: "/", label: "Overview", min: "viewer", icon: "M4 13h6V4H4zM14 20h6v-9h-6zM4 20h6v-3H4zM14 7h6V4h-6z" },
   { href: "/users/", label: "Users", min: "support", icon: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M17 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3", section: "Manage" },
+  { href: "/ai/", label: "AI", min: "viewer", icon: "M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" },
   { href: "/shares/", label: "Shares", min: "support", icon: "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" },
   { href: "/abuse/", label: "Abuse", min: "support", icon: "M12 3 2 20h20zM12 10v4M12 17h.01" },
   { href: "/audit/", label: "Audit log", min: "support", icon: "M8 4h10a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2zM9 9h8M9 13h6" },

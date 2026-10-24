@@ -20,3 +20,10 @@ export function ago(ms: number | null): string {
   if (s < 30 * 86400) return `${Math.round(s / 86400)} d ago`;
   return date(ms);
 }
+export const USD_TO_INR = 84;
+/** AI cost is stored in micro-dollars (1 USD = 1,000,000) and shown in rupees. */
+export function inr(microUsd: number): string {
+  if (!microUsd) return "₹0";
+  const r = (microUsd / 1e6) * USD_TO_INR;
+  return r < 0.01 ? "< ₹0.01" : `₹${r.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}

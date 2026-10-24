@@ -18,5 +18,8 @@ export async function wipeAccount(uid: string) {
   await deleteSharesOfUser(uid);
   await getStorage().bucket().deleteFiles({ prefix: `users/${uid}/` });
   await db.recursiveDelete(db.doc(`users/${uid}`));
+  // AI usage records live outside users/{uid} (admin cost views)
+  const usage = await Promise.all(["aiUsage", "aiMonthly"].map((c) => db.collection(c).where("uid", "==", uid).get()));
+  await Promise.all(usage.flatMap((s) => s.docs.map((d) => d.ref.delete())));
   await getAuth().deleteUser(uid);
 }

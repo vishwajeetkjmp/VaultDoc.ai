@@ -204,7 +204,10 @@ textarea {
   }
 }
 .two {
-  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr));
+}
+.two > * {
+  min-width: 0; /* wide tables scroll inside their card instead of widening the page */
 }
 .card {
   border: 1px solid var(--border);

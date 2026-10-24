@@ -6,16 +6,14 @@ import TimeChart from "../components/TimeChart";
 import { Card, Stat } from "../components/ui";
 import { useAdmin } from "../components/AdminProvider";
 import { adminApi, errorText, type CurrentStats, type DayStats } from "../lib/api";
-import { ago, bytes, num } from "../lib/format";
+import { ago, bytes, inr, num } from "../lib/format";
 
 type Overview = { current: CurrentStats; days: DayStats[] };
 
-// Gemini 3.1 Flash-Lite list prices (USD per 1M tokens), keep in sync with the model in functions/src/ai.ts
-// (Claude Haiku 5.5, if AI_PROVIDER switches back: input 0.1, cached 0.01, output 0.5)
+// Days before cost tracking (24 Oct 2026) only have token counts: estimate them at Gemini 3.1 Flash-Lite prices
 const AI_PRICE = { input: 0.25, cached: 0.025, output: 1.5 };
-const USD_TO_INR = 84;
-const aiCostInr = (d?: DayStats) =>
-  d ? (((d.aiInputTokens ?? 0) * AI_PRICE.input + (d.aiCachedTokens ?? 0) * AI_PRICE.cached + (d.aiOutputTokens ?? 0) * AI_PRICE.output) / 1e6) * USD_TO_INR : 0;
+const aiCostMicroUsd = (d?: DayStats) =>
+  !d ? 0 : (d.aiCostMicroUsd ?? (d.aiInputTokens ?? 0) * AI_PRICE.input + (d.aiCachedTokens ?? 0) * AI_PRICE.cached + (d.aiOutputTokens ?? 0) * AI_PRICE.output);
 
 /** Last 30 days, filling missing days with 0 so the chart has no gaps. */
 function series(days: DayStats[], pick: (d: DayStats) => number | undefined, carry = false) {
@@ -77,7 +75,7 @@ export default function OverviewPage() {
         <Stat
           label="AI questions today"
           value={num((today?.aiQuestions ?? 0) + (today?.aiAnalyses ?? 0))}
-          note={`≈ ₹${aiCostInr(today).toFixed(2)} today · ₹${days.reduce((s, d) => s + aiCostInr(d), 0).toFixed(2)} in 30 days`}
+          note={`${inr(aiCostMicroUsd(today))} today · ${inr(days.reduce((s, d) => s + aiCostMicroUsd(d), 0))} in 30 days`}
         />
         <Stat label="Reminder emails" value={num(days.reduce((s, d) => s + (d.remindersSent ?? 0), 0))} note="sent in the last 30 days" />
         <Stat label="Invite emails" value={num(days.reduce((s, d) => s + (d.inviteEmails ?? 0), 0))} note="sent in the last 30 days" />
