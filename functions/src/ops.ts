@@ -7,7 +7,7 @@ import { onRequest } from "firebase-functions/v2/https";
  * format Google Cloud Error Reporting understands, so website errors appear grouped next to the
  * functions' own errors (Error Reporting emails on new ones). Small, capped and rate-limited.
  */
-const ORIGINS = ["http://localhost:3000", "https://vaultdoc-ai.web.app", "https://vaultdoc-ai.firebaseapp.com"];
+const ORIGINS = ["http://localhost:3000", "https://vaultdoc-ai.web.app", "https://vaultdoc-ai.firebaseapp.com", "https://vaultdocai.com", "https://www.vaultdocai.com"];
 const MAX_BODY = 8 * 1024;
 const PER_MINUTE = 20;
 const recent = new Map<string, { at: number; n: number }>(); // per instance; resets on cold start, which is fine here
