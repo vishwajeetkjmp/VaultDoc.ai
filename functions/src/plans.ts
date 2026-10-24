@@ -26,6 +26,9 @@ export const PLAN_LIMITS: Record<PlanId, { aiDaily: number; aiFiles: number; aiP
   pro: { aiDaily: 50, aiFiles: 20, aiPages: 300, quotaBytes: 10 * GB, maxFileBytes: 50 * MB },
 };
 
+/** What Pro costs: a one-time payment for 30 days (amount in paise). Keep in sync with apps/web/lib/plans.ts. */
+export const PRO_PRICE = { amount: 399_00, days: 30 };
+
 const db = () => getFirestore();
 
 /** The plan a user is on right now (Pro past its end date counts as Free). */

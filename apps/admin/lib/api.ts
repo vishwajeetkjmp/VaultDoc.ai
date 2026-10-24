@@ -74,6 +74,8 @@ export type DayStats = {
   aiOutputTokens?: number;
   aiCostMicroUsd?: number;
   remindersSent?: number;
+  payments?: number;
+  revenuePaise?: number;
 };
 export type AiCost = { questions: number; costMicroUsd: number };
 export type AiOverview = {

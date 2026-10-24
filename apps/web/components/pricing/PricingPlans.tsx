@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useAuth } from "../AuthProvider";
 import { formatRupees, Plan, PLAN_TABS } from "../../lib/plans";
@@ -8,6 +9,9 @@ import PlanIcon from "./PlanIcon";
 import styles from "./pricing.module.css";
 
 type Billing = "monthly" | "yearly";
+
+// Only logged-in people get the real button (it needs their plan from Firestore)
+const UpgradeButton = dynamic(() => import("./UpgradeButton"), { ssr: false });
 
 /** Tabs (Individual / Business), an optional Monthly/Yearly switch, and the plan cards. */
 export default function PricingPlans() {
@@ -96,7 +100,9 @@ function PlanCard({ plan, billing }: { plan: Plan; billing: Billing }) {
       <div className={styles.price}>{price}</div>
       <p className={styles.priceNote}>{note}</p>
 
-      {available ? (
+      {plan.cta.checkout && user ? (
+        <UpgradeButton user={user} className={styles.cta} noteClassName={styles.priceNote} />
+      ) : available ? (
         // Invisible (but keeping its space) until we know whether someone is logged in, so the label never flips
         <Link href={cta.href!} className={styles.cta} style={{ visibility: loading ? "hidden" : "visible" }}>
           {cta.label}

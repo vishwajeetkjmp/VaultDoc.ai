@@ -151,3 +151,4 @@ export { computeStatsHourly } from "./stats";
 export { reportClientError } from "./ops";
 export { aiAnalyze, aiAsk, aiInfo, sendReminders } from "./ai";
 export { expirePlans } from "./plans";
+export { createProOrder, razorpayWebhook, verifyProPayment } from "./payments";

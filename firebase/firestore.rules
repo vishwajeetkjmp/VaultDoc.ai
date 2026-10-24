@@ -56,6 +56,12 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Pro payments: the owner can see their own receipts; only Cloud Functions write them
+      match /payments/{orderId} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
       // Deadline reminders: created and deleted by the owner (no edits; delete and add again)
       match /reminders/{reminderId} {
         allow read, delete: if isOwner(uid);

@@ -77,6 +77,11 @@ export default function OverviewPage() {
           value={num((today?.aiQuestions ?? 0) + (today?.aiAnalyses ?? 0))}
           note={`${inr(aiCostMicroUsd(today))} today · ${inr(days.reduce((s, d) => s + aiCostMicroUsd(d), 0))} in 30 days`}
         />
+        <Stat
+          label="Pro payments"
+          value={`₹${num(days.reduce((s, d) => s + (d.revenuePaise ?? 0), 0) / 100)}`}
+          note={`${num(days.reduce((s, d) => s + (d.payments ?? 0), 0))} payments in the last 30 days · ${c ? num(c.proUsers ?? 0) : "—"} Pro users`}
+        />
         <Stat label="Reminder emails" value={num(days.reduce((s, d) => s + (d.remindersSent ?? 0), 0))} note="sent in the last 30 days" />
         <Stat label="Invite emails" value={num(days.reduce((s, d) => s + (d.inviteEmails ?? 0), 0))} note="sent in the last 30 days" />
       </div>
