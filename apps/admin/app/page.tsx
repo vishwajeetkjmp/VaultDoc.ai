@@ -66,7 +66,7 @@ export default function OverviewPage() {
       }
     >
       <div className="grid stats">
-        <Stat label="Users" value={c ? num(c.users) : "—"} note={c && `${num(c.verified)} verified · ${num(c.disabled)} disabled`} />
+        <Stat label="Users" value={c ? num(c.users) : "—"} note={c && `${num(c.verified)} verified · ${num(c.proUsers ?? 0)} Pro · ${num(c.disabled)} disabled`} />
         <Stat label="New sign-ups" value={c ? num(c.newUsers7) : "—"} note={c && `last 7 days · ${num(c.newUsers30)} in 30 days`} />
         <Stat label="Active users" value={c ? num(c.activeUsers7) : "—"} note="used the app in the last 7 days" />
         <Stat label="Storage used" value={c ? bytes(c.storageBytes) : "—"} note={c && `${num(c.files)} files`} />

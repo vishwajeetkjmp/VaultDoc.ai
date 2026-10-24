@@ -12,6 +12,7 @@ import { confirmIdentity, deleteMyAccount, usesGoogle, usesPassword } from "../.
 import { getDisplayName } from "../../lib/profile";
 
 const AiSetting = dynamic(() => import("../../components/files/AiSetting"), { ssr: false });
+const PlanSummary = dynamic(() => import("../../components/files/PlanSummary"), { ssr: false });
 
 export default function AccountPage() {
   return (
@@ -50,6 +51,15 @@ function Account() {
           </div>
         </div>
       </section>
+
+      {user.emailVerified && (
+        <section className={styles.section}>
+          <h2 className={styles.h2}>Plan</h2>
+          <div className={styles.card}>
+            <PlanSummary uid={user.uid} />
+          </div>
+        </section>
+      )}
 
       {user.emailVerified && (
         <section className={styles.section}>

@@ -8,6 +8,7 @@ import { onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { deletedUserRef, wipeAccount } from "./accounts";
 import { deleteAiDataOfItem } from "./ai";
+import { PLAN_LIMITS, planOf } from "./plans";
 import { deleteSharesOfItem } from "./shares";
 
 
@@ -50,9 +51,12 @@ export const onFileUploaded = onObjectFinalized(async (event) => {
     if (!item.exists || tombstone.exists) return true; // record deleted (upload cancelled, or account deleted)
     if (item.get("status") === "ready") return false; // already counted (event retried)
 
+    // Pro has its own limits; an admin's per-user quota (users/{uid}.quotaBytes) wins over both plans
+    const pro = planOf(user) === "pro";
     const maxFileBytes =
-      (Number(config.get("maxFileBytes")) || DEFAULT_MAX_FILE_BYTES) + (isVault ? VAULT_OVERHEAD_BYTES : 0);
-    const quotaBytes = Number(user.get("quotaBytes")) || Number(config.get("quotaBytes")) || DEFAULT_QUOTA_BYTES;
+      (pro ? PLAN_LIMITS.pro.maxFileBytes : Number(config.get("maxFileBytes")) || DEFAULT_MAX_FILE_BYTES) + (isVault ? VAULT_OVERHEAD_BYTES : 0);
+    const quotaBytes =
+      Number(user.get("quotaBytes")) || (pro ? PLAN_LIMITS.pro.quotaBytes : Number(config.get("quotaBytes")) || DEFAULT_QUOTA_BYTES);
     const usedBytes = Number(user.get("usedBytes")) || 0;
     if (size > maxFileBytes || usedBytes + size > quotaBytes) {
       logger.warn("Upload over limit, removing", { uid, itemId, size, usedBytes, quotaBytes, maxFileBytes });
@@ -146,3 +150,4 @@ export { adminApi } from "./admin";
 export { computeStatsHourly } from "./stats";
 export { reportClientError } from "./ops";
 export { aiAnalyze, aiAsk, aiInfo, sendReminders } from "./ai";
+export { expirePlans } from "./plans";

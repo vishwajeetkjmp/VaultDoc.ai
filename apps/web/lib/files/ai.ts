@@ -13,6 +13,8 @@ export type Analysis = {
   amounts: { label: string; value: string }[];
   dates: { label: string; date: string; kind: string }[];
 };
+/** Combined summary of several files (Pro); each document says which file it came from. */
+export type CombinedAnalysis = { overview: string[]; documents: (Analysis & { file: string; itemId: string })[] };
 export type Quota = { used: number; limit: number };
 export type Citation = { page?: number; text: string };
 export type ChatTurn = { role: "user" | "assistant"; text: string; citations?: Citation[] };
@@ -32,14 +34,18 @@ export function aiCanRead(contentType: string | null): boolean {
 export const setAiEnabled = (uid: string, enabled: boolean) =>
   updateDoc(doc(db(), "users", uid), { aiEnabled: enabled, aiConsentAt: serverTimestamp() });
 
-export const aiInfo = (itemId: string) =>
-  call<{ itemId: string }, { supported: boolean; quota: Quota; analysis: Analysis | null }>("aiInfo", { itemId });
+/** One file is sent as `itemId` (as before); several as `itemIds` (Pro). */
+const files = (itemIds: string[]) => (itemIds.length === 1 ? { itemId: itemIds[0] } : { itemIds });
 
-export const aiAnalyze = (itemId: string) => call<{ itemId: string }, { analysis: Analysis; quota: Quota }>("aiAnalyze", { itemId });
+export const aiInfo = (itemIds: string[]) =>
+  call<object, { supported: boolean; plan: "free" | "pro"; quota: Quota; analysis: Analysis | null; combined: CombinedAnalysis | null }>("aiInfo", files(itemIds));
+
+export const aiAnalyze = (itemIds: string[]) =>
+  call<object, { analysis?: Analysis; combined?: CombinedAnalysis; quota: Quota }>("aiAnalyze", files(itemIds));
 
 /** Asks a question; `onText` receives the answer as it's written. */
 export async function aiAsk(
-  itemId: string,
+  itemIds: string[],
   question: string,
   history: ChatTurn[],
   onText: (chunk: string) => void,
@@ -47,7 +53,7 @@ export async function aiAsk(
 ): Promise<{ text: string; citations: Citation[]; quota: Quota }> {
   const fn = httpsCallable<object, { text: string; citations: Citation[]; quota: Quota }, string>(fns(), "aiAsk", { timeout: 120_000 });
   const { stream, data } = await fn.stream(
-    { itemId, question, history: history.map(({ role, text }) => ({ role, text })) },
+    { ...files(itemIds), question, history: history.map(({ role, text }) => ({ role, text })) },
     { signal },
   );
   for await (const chunk of stream) onText(chunk);

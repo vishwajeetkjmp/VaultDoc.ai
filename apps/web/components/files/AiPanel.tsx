@@ -9,6 +9,7 @@ import {
   aiInfo,
   Analysis,
   ChatTurn,
+  CombinedAnalysis,
   listenReminders,
   Quota,
   Reminder,
@@ -19,7 +20,12 @@ import files from "./files.module.css";
 import styles from "./ai.module.css";
 
 type Tab = "summary" | "ask";
-type State = { status: "loading" } | { status: "consent" } | { status: "ready"; supported: boolean } | { status: "error"; message: string };
+type State =
+  | { status: "loading" }
+  | { status: "consent" }
+  | { status: "pro" }
+  | { status: "ready"; supported: boolean }
+  | { status: "error"; message: string };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -34,26 +40,42 @@ function suggestionsFor(docType?: string): string[] {
   return [...common, "Explain this in simple Hindi", "Is there anything I need to do?"];
 }
 
-/** Slide-in AI panel for one file: Summary (key details + reminders) and Ask (chat with page references). */
-export default function AiPanel({ uid, item, onClose }: { uid: string; item: Item; onClose: () => void }) {
+/** Suggested questions across several files (Pro). */
+const MULTI_SUGGESTIONS = [
+  "List every important date and deadline across these files",
+  "What is the total of all amounts, file by file?",
+  "What differs between these documents?",
+  "Is there anything I need to do soon?",
+];
+
+/**
+ * Slide-in AI panel for one file, or several files together (Pro): Summary (key details + reminders)
+ * and Ask (chat with page references).
+ */
+export default function AiPanel({ uid, items, onClose }: { uid: string; items: Item[]; onClose: () => void }) {
   const [state, setState] = useState<State>({ status: "loading" });
   const [tab, setTab] = useState<Tab>("summary");
   const [quota, setQuota] = useState<Quota | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [combined, setCombined] = useState<CombinedAnalysis | null>(null);
+  const multi = items.length > 1;
+  const idsKey = items.map((i) => i.id).join(",");
+  const ids = useMemo(() => idsKey.split(","), [idsKey]);
 
   const load = useCallback(async () => {
     setState({ status: "loading" });
     try {
-      const r = await aiInfo(item.id);
+      const r = await aiInfo(ids);
       setQuota(r.quota);
       setAnalysis(r.analysis);
+      setCombined(r.combined);
       setState({ status: "ready", supported: r.supported });
-      if (!r.analysis) setTab("summary");
+      setTab("summary");
     } catch (e) {
       const err = callError(e);
-      setState(err.reason === "consent" ? { status: "consent" } : { status: "error", message: err.message });
+      setState(err.reason === "consent" ? { status: "consent" } : err.reason === "pro" ? { status: "pro" } : { status: "error", message: err.message });
     }
-  }, [item.id]);
+  }, [ids]);
   useEffect(() => void load(), [load]);
 
   useEffect(() => {
@@ -67,21 +89,33 @@ export default function AiPanel({ uid, item, onClose }: { uid: string; item: Ite
   return (
     <>
       <div className={styles.overlay} onClick={onClose} />
-      <aside className={styles.panel} role="dialog" aria-modal aria-label={`Ask AI about ${item.name}`}>
+      <aside className={styles.panel} role="dialog" aria-modal aria-label={multi ? `Ask AI about ${items.length} files` : `Ask AI about ${items[0].name}`}>
         <div className={styles.head}>
           <span className={styles.spark} aria-hidden>
             ✨
           </span>
           <div className={styles.headText}>
-            <div className={styles.headTitle}>Ask AI</div>
-            <div className={styles.headFile} title={item.name}>
-              {item.name}
+            <div className={styles.headTitle}>
+              Ask AI{multi && <span className={styles.proTag}>Pro</span>}
+            </div>
+            <div className={styles.headFile} title={items.map((i) => i.name).join("\n")}>
+              {multi ? `${items.length} files` : items[0].name}
             </div>
           </div>
           <button className={styles.close} onClick={onClose} aria-label="Close">
             ✕
           </button>
         </div>
+
+        {multi && (
+          <div className={styles.fileChips}>
+            {items.map((i) => (
+              <span key={i.id} className={styles.fileChip} title={i.name}>
+                📄 {i.name}
+              </span>
+            ))}
+          </div>
+        )}
 
         {state.status === "ready" && state.supported && (
           <div className={styles.tabs} role="tablist">
@@ -112,20 +146,35 @@ export default function AiPanel({ uid, item, onClose }: { uid: string; item: Ite
           </div>
         )}
         {state.status === "consent" && <Consent uid={uid} onAccepted={load} onClose={onClose} />}
+        {state.status === "pro" && <ProNeeded onClose={onClose} />}
         {state.status === "ready" && !state.supported && (
           <div className={styles.body}>
             <div className={styles.center}>
               <span className={styles.bigSpark}>✨</span>
-              <b>AI can't read this file type yet</b>
-              <span className={files.meterText}>It works with PDFs, Word, Excel, PowerPoint, text files and photos up to 20 MB.</span>
+              <b>{multi ? "AI can't read all of these files" : "AI can't read this file type yet"}</b>
+              <span className={files.meterText}>
+                It works with PDFs, Word, Excel, PowerPoint, text files and photos up to 20 MB{multi ? " each, 50 MB together" : ""}.
+              </span>
             </div>
           </div>
         )}
         {state.status === "ready" && state.supported && tab === "summary" && (
-          <SummaryTab uid={uid} item={item} analysis={analysis} left={left} onAnalysis={(a, q) => (setAnalysis(a), setQuota(q))} onAsk={() => setTab("ask")} />
+          <SummaryTab
+            uid={uid}
+            items={items}
+            analysis={analysis}
+            combined={combined}
+            left={left}
+            onDone={(r) => {
+              if (r.analysis) setAnalysis(r.analysis);
+              if (r.combined) setCombined(r.combined);
+              setQuota(r.quota);
+            }}
+            onAsk={() => setTab("ask")}
+          />
         )}
         {state.status === "ready" && state.supported && tab === "ask" && (
-          <AskTab item={item} left={left} suggestions={suggestionsFor(analysis?.docType)} onQuota={setQuota} />
+          <AskTab ids={ids} multi={multi} left={left} suggestions={multi ? MULTI_SUGGESTIONS : suggestionsFor(analysis?.docType)} onQuota={setQuota} />
         )}
       </aside>
     </>
@@ -142,7 +191,7 @@ function Consent({ uid, onAccepted, onClose }: { uid: string; onAccepted: () => 
         <b style={{ fontSize: 17 }}>Turn on AI for My Space</b>
         <div className={styles.points}>
           <div>
-            📄 <b>Only the file you ask about</b> is sent to our AI provider, Google Cloud (Gemini), to read it and answer you.
+            📄 <b>Only the files you ask about</b> are sent to our AI provider, Google Cloud (Gemini), to read them and answer you.
           </div>
           <div>
             🚫 <b>Never used to train AI.</b> Google doesn't train on files sent this way.
@@ -181,34 +230,67 @@ function Consent({ uid, onAccepted, onClose }: { uid: string; onAccepted: () => 
   );
 }
 
+/** A Free user chose several files: explain Pro instead of an error. */
+function ProNeeded({ onClose }: { onClose: () => void }) {
+  return (
+    <div className={styles.body}>
+      <div className={styles.center}>
+        <span className={styles.bigSpark}>👑</span>
+        <b style={{ fontSize: 17 }}>Ask about several files together with Pro</b>
+        <span className={files.meterText} style={{ maxWidth: 340 }}>
+          On the Free plan, AI reads one file at a time. Choose one file, or see what Pro adds.
+        </span>
+        <div className={styles.points}>
+          <div>📚 Up to 20 files in one question: compare, total, find every deadline</div>
+          <div>✨ 50 AI questions a day</div>
+          <div>☁️ 10 GB storage, files up to 50 MB</div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className={files.button} onClick={onClose}>
+            Choose one file
+          </button>
+          <a className={files.primaryButton} href="/pricing" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
+            See Pro
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SummaryTab({
   uid,
-  item,
+  items,
   analysis,
+  combined,
   left,
-  onAnalysis,
+  onDone,
   onAsk,
 }: {
   uid: string;
-  item: Item;
+  items: Item[];
   analysis: Analysis | null;
+  combined: CombinedAnalysis | null;
   left: number | null;
-  onAnalysis: (a: Analysis, q: Quota) => void;
+  onDone: (r: { analysis?: Analysis; combined?: CombinedAnalysis; quota: Quota }) => void;
   onAsk: () => void;
 }) {
+  const multi = items.length > 1;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [saving, setSaving] = useState<string | null>(null);
+  const idsKey = items.map((i) => i.id).join(",");
 
-  useEffect(() => listenReminders(uid, (list) => setReminders(list.filter((r) => r.itemId === item.id))), [uid, item.id]);
+  useEffect(() => {
+    const ids = new Set(idsKey.split(","));
+    return listenReminders(uid, (list) => setReminders(list.filter((r) => ids.has(r.itemId))));
+  }, [uid, idsKey]);
 
   const analyse = async () => {
     setBusy(true);
     setError("");
     try {
-      const r = await aiAnalyze(item.id);
-      onAnalysis(r.analysis, r.quota);
+      onDone(await aiAnalyze(items.map((i) => i.id)));
     } catch (e) {
       setError(callError(e).message);
     } finally {
@@ -216,18 +298,20 @@ function SummaryTab({
     }
   };
 
-  if (!analysis) {
+  if (multi ? !combined : !analysis) {
     return (
       <div className={styles.body}>
         <div className={styles.center}>
           <span className={styles.bigSpark}>✨</span>
-          <b style={{ fontSize: 17 }}>Understand this document in seconds</b>
+          <b style={{ fontSize: 17 }}>{multi ? `Understand these ${items.length} files in seconds` : "Understand this document in seconds"}</b>
           <span className={files.meterText} style={{ maxWidth: 320 }}>
-            Get a short summary, the people and amounts involved, and important dates you can set reminders for.
+            {multi
+              ? "Get an overview of the set, then each file's summary, amounts and important dates you can set reminders for."
+              : "Get a short summary, the people and amounts involved, and important dates you can set reminders for."}
           </span>
           {error && <div className={styles.error}>{error}</div>}
           <button className={files.primaryButton} onClick={analyse} disabled={busy || left === 0}>
-            {busy ? "Reading the document…" : "Summarise this file"}
+            {busy ? (multi ? "Reading the files…" : "Reading the document…") : multi ? "Summarise these files" : "Summarise this file"}
           </button>
           <span className={files.meterText}>{left === 0 ? "No AI questions left today. They reset at midnight." : "Uses 1 of your daily AI questions."}</span>
         </div>
@@ -235,92 +319,31 @@ function SummaryTab({
     );
   }
 
-  const today = new Date().toISOString().slice(0, 10);
   return (
     <div className={styles.body}>
-      <span className={styles.docType}>{analysis.docType}</span>
-      <div className={styles.docTitle}>{analysis.title}</div>
-
-      {analysis.summary.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Summary</div>
-          <ul className={styles.bullets}>
-            {analysis.summary.map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {analysis.dates.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Important dates</div>
-          {analysis.dates.map((d) => {
-            const set = reminders.some((r) => r.date === d.date && r.label === d.label);
-            const [y, m, day] = d.date.split("-");
-            const past = d.date < today;
-            return (
-              <div key={`${d.label}-${d.date}`} className={styles.dateRow}>
-                <div className={styles.dateBox}>
-                  <b>{Number(day)}</b>
-                  <span>
-                    {MONTHS[Number(m) - 1]} {y.slice(2)}
-                  </span>
-                </div>
-                <div className={styles.dateText}>
-                  <div>{d.label}</div>
-                  <div>{past ? "Already passed" : d.kind}</div>
-                </div>
-                {!past &&
-                  (set ? (
-                    <span className={styles.remindDone}>✓ Reminder set</span>
-                  ) : (
-                    <button
-                      className={styles.remind}
-                      disabled={saving === d.date}
-                      title="Email me 30, 7 and 1 days before, and on the day"
-                      onClick={async () => {
-                        setSaving(d.date);
-                        try {
-                          await addReminder(uid, { itemId: item.id, itemName: item.name, label: d.label, date: d.date });
-                        } catch {
-                          setError("Couldn't set the reminder. Please try again.");
-                        } finally {
-                          setSaving(null);
-                        }
-                      }}
-                    >
-                      🔔 Remind me
-                    </button>
-                  ))}
+      {multi && combined ? (
+        <>
+          {combined.overview.length > 0 && (
+            <div>
+              <div className={styles.sectionTitle}>Overview</div>
+              <ul className={styles.bullets}>
+                {combined.overview.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {combined.documents.map((d) => (
+            <section key={d.itemId} className={styles.docCard}>
+              <div className={styles.docFile} title={d.file}>
+                📄 {d.file}
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {analysis.amounts.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Amounts</div>
-          <div className={styles.kv}>
-            {analysis.amounts.map((a) => (
-              <FragmentPair key={`${a.label}-${a.value}`} a={a.label} b={a.value} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {analysis.parties.length > 0 && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>People and organisations</div>
-          <div className={styles.chips}>
-            {analysis.parties.map((p) => (
-              <span key={p} className={styles.chip}>
-                {p}
-              </span>
-            ))}
-          </div>
-        </div>
+              <DocumentFacts uid={uid} a={d} itemId={d.itemId} itemName={d.file} reminders={reminders} onError={setError} compact />
+            </section>
+          ))}
+        </>
+      ) : (
+        analysis && <DocumentFacts uid={uid} a={analysis} itemId={items[0].id} itemName={items[0].name} reminders={reminders} onError={setError} />
       )}
 
       {error && (
@@ -341,6 +364,118 @@ function SummaryTab({
   );
 }
 
+/** One document's key facts: type and title, summary, dates (with Remind me), amounts, people. */
+function DocumentFacts({
+  uid,
+  a,
+  itemId,
+  itemName,
+  reminders,
+  onError,
+  compact,
+}: {
+  uid: string;
+  a: Analysis;
+  itemId: string;
+  itemName: string;
+  reminders: Reminder[];
+  onError: (message: string) => void;
+  compact?: boolean;
+}) {
+  const [saving, setSaving] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const section = compact ? styles.sectionCompact : styles.section;
+  return (
+    <>
+      <span className={styles.docType}>{a.docType}</span>
+      <div className={compact ? styles.docTitleSmall : styles.docTitle}>{a.title}</div>
+
+      {a.summary.length > 0 && (
+        <div className={section}>
+          {!compact && <div className={styles.sectionTitle}>Summary</div>}
+          <ul className={styles.bullets}>
+            {a.summary.map((s, i) => (
+              <li key={i}>{s}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {a.dates.length > 0 && (
+        <div className={section}>
+          <div className={styles.sectionTitle}>Important dates</div>
+          {a.dates.map((d) => {
+            const set = reminders.some((r) => r.itemId === itemId && r.date === d.date && r.label === d.label);
+            const [y, m, day] = d.date.split("-");
+            const past = d.date < today;
+            const key = `${d.label}-${d.date}`;
+            return (
+              <div key={key} className={styles.dateRow}>
+                <div className={styles.dateBox}>
+                  <b>{Number(day)}</b>
+                  <span>
+                    {MONTHS[Number(m) - 1]} {y.slice(2)}
+                  </span>
+                </div>
+                <div className={styles.dateText}>
+                  <div>{d.label}</div>
+                  <div>{past ? "Already passed" : d.kind}</div>
+                </div>
+                {!past &&
+                  (set ? (
+                    <span className={styles.remindDone}>✓ Reminder set</span>
+                  ) : (
+                    <button
+                      className={styles.remind}
+                      disabled={saving === key}
+                      title="Email me 30, 7 and 1 days before, and on the day"
+                      onClick={async () => {
+                        setSaving(key);
+                        try {
+                          await addReminder(uid, { itemId, itemName, label: d.label, date: d.date });
+                        } catch {
+                          onError("Couldn't set the reminder. Please try again.");
+                        } finally {
+                          setSaving(null);
+                        }
+                      }}
+                    >
+                      🔔 Remind me
+                    </button>
+                  ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {a.amounts.length > 0 && (
+        <div className={section}>
+          <div className={styles.sectionTitle}>Amounts</div>
+          <div className={styles.kv}>
+            {a.amounts.map((x) => (
+              <FragmentPair key={`${x.label}-${x.value}`} a={x.label} b={x.value} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {a.parties.length > 0 && (
+        <div className={section}>
+          <div className={styles.sectionTitle}>People and organisations</div>
+          <div className={styles.chips}>
+            {a.parties.map((p) => (
+              <span key={p} className={styles.chip}>
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 function FragmentPair({ a, b }: { a: string; b: string }) {
   return (
     <>
@@ -350,7 +485,7 @@ function FragmentPair({ a, b }: { a: string; b: string }) {
   );
 }
 
-function AskTab({ item, left, suggestions, onQuota }: { item: Item; left: number | null; suggestions: string[]; onQuota: (q: Quota) => void }) {
+function AskTab({ ids, multi, left, suggestions, onQuota }: { ids: string[]; multi: boolean; left: number | null; suggestions: string[]; onQuota: (q: Quota) => void }) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState<string | null>(null);
@@ -381,7 +516,7 @@ function AskTab({ item, left, suggestions, onQuota }: { item: Item; left: number
     setStreaming("");
     abort.current = new AbortController();
     try {
-      const r = await aiAsk(item.id, question, history, (chunk) => setStreaming((s) => (s ?? "") + chunk), abort.current.signal);
+      const r = await aiAsk(ids, question, history, (chunk) => setStreaming((s) => (s ?? "") + chunk), abort.current.signal);
       setTurns((t) => [...t, { role: "assistant", text: r.text, citations: r.citations }]);
       onQuota(r.quota);
     } catch (e) {
@@ -402,7 +537,7 @@ function AskTab({ item, left, suggestions, onQuota }: { item: Item; left: number
       <div className={styles.body}>
         {!turns.length && !busy ? (
           <div className={styles.center} style={{ paddingTop: 8 }}>
-            <span className={files.meterText}>Ask anything about this document. Try:</span>
+            <span className={files.meterText}>{multi ? `Ask anything about these ${ids.length} files. Try:` : "Ask anything about this document. Try:"}</span>
             <div className={styles.suggestions}>
               {suggestions.map((s) => (
                 <button key={s} className={styles.suggestion} onClick={() => ask(s)} disabled={outOfQuestions}>
@@ -437,7 +572,7 @@ function AskTab({ item, left, suggestions, onQuota }: { item: Item; left: number
               (streaming ? (
                 <div className={`${styles.assistant} ${styles.cursor}`}>{streaming}</div>
               ) : (
-                <div className={styles.assistant} aria-label="Reading the document">
+                <div className={styles.assistant} aria-label={multi ? "Reading the files" : "Reading the document"}>
                   <span className={styles.thinking}>
                     <i />
                     <i />
@@ -468,7 +603,7 @@ function AskTab({ item, left, suggestions, onQuota }: { item: Item; left: number
             rows={1}
             value={draft}
             maxLength={1500}
-            placeholder={outOfQuestions ? "No AI questions left today" : "Ask about this document…"}
+            placeholder={outOfQuestions ? "No AI questions left today" : multi ? "Ask about these files…" : "Ask about this document…"}
             disabled={outOfQuestions}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {

@@ -339,6 +339,38 @@
 .rowPending {
   opacity: 0.6;
 }
+.rowCheck {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0 2px 0 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* Several files selected (My Space): count, Ask AI, Clear. Floats over the list so rows don't move. */
+.selectionBar {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 20;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 6px 8px 6px 18px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.selectionBar .spacer {
+  flex: 1;
+}
 .nameCell {
   display: flex;
   align-items: center;
@@ -684,6 +716,10 @@
   /* The round + button covers New folder on phones, leaving room for the title and Ask AI */
   .toolbarNewFolder {
     display: none;
+  }
+  /* Above the round + button */
+  .selectionBar {
+    bottom: 100px;
   }
   /* My Space only: top bar, section tabs, content (the vault page has no tabs) */
   .withTabs {
