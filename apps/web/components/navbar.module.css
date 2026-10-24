@@ -309,18 +309,97 @@
   background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-/* Phone menu panel */
+/* Phone menu panel: fills the screen below the bar; the list scrolls, Login / Sign Up stay at the bottom */
 .mobilePanel {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  max-height: calc(100dvh - 70px);
-  overflow-y: auto;
-  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 100%);
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
   box-shadow: 0 16px 30px rgba(0, 0, 0, 0.25);
+}
+.mobileBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 16px 16px;
+}
+.mobileAuth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+.mobileLogin,
+.mobileSignUp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.mobileLogin {
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.mobileSignUp {
+  background: var(--cta-bg);
+  color: var(--cta-text);
+}
+/* A tool group row: chevron, name, count; tap to open */
+.mobileGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.mobileGroup:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+.chevronOpen {
+  composes: chevron;
+  transform: rotate(90deg);
+}
+.mobileCount {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.mobileToolList {
+  margin: 0 0 6px 15px;
+  padding: 0 0 0 12px;
+  border-left: 1px solid var(--border);
+  list-style: none;
+}
+.mobileTool {
+  composes: toolItem;
+  font-size: 15px;
+  padding: 10px 8px;
 }
 .mobileHeading {
   padding: 12px 8px 4px;
