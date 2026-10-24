@@ -32,9 +32,9 @@ import { bumpDaily, istDay } from "./stats";
  */
 const PROVIDER = process.env.AI_PROVIDER === "anthropic" ? "anthropic" : "vertex";
 const VERTEX_REGION = process.env.AI_VERTEX_REGION || "global";
-export const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
-// The secret is only bound (and required at deploy) when the Anthropic API is used
-const AI_SECRETS = PROVIDER === "anthropic" ? [ANTHROPIC_API_KEY] : [];
+// Declared only for the Anthropic API: a declared secret must exist in Secret Manager to deploy
+const ANTHROPIC_API_KEY = PROVIDER === "anthropic" ? defineSecret("ANTHROPIC_API_KEY") : undefined;
+const AI_SECRETS = ANTHROPIC_API_KEY ? [ANTHROPIC_API_KEY] : [];
 const MODEL = "claude-haiku-5-5";
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_DOC_TOKENS = 90_000;
@@ -49,7 +49,7 @@ let client: Anthropic | AnthropicVertex | undefined;
 const anthropic = () =>
   (client ??=
     PROVIDER === "anthropic"
-      ? new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() })
+      ? new Anthropic({ apiKey: ANTHROPIC_API_KEY!.value() })
       : new AnthropicVertex({ projectId: process.env.GCLOUD_PROJECT, region: VERTEX_REGION }));
 
 // ---------- Who's asking, consent, quota ----------
