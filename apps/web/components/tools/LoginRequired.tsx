@@ -10,7 +10,7 @@ import styles from "./tools.module.css";
  * Shows the tool only to logged-in users with a verified email; everyone else gets a
  * short explanation and the way in. The converter function checks the same thing.
  */
-export default function LoginRequired({ toolName, local, children }: { toolName: string; local?: boolean; children: React.ReactNode }) {
+export default function LoginRequired({ toolName, local, pro, children }: { toolName: string; local?: boolean; pro?: boolean; children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
 
@@ -27,7 +27,9 @@ export default function LoginRequired({ toolName, local, children }: { toolName:
       <p className={styles.muted} style={{ maxWidth: 440, textAlign: "center", margin: 0 }}>
         {verify
           ? "We sent you a link when you signed up. Verify your email, then come back to this page."
-          : local
+          : pro
+            ? `${toolName} is part of VaultDoc Pro. Log in to use it, or create an account and upgrade.`
+            : local
             ? "This tool is free with a VaultDoc account. Creating one takes a minute, no card needed, and your file still never leaves your device."
             : "This tool runs on our secure server, so it's free with a VaultDoc account. Creating one takes a minute, no card needed."}
       </p>

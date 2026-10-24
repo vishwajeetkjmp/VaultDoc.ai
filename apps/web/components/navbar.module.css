@@ -134,6 +134,15 @@
   opacity: 1;
   transform: none;
 }
+/* Pro tool for someone on Free: dimmed, but it leads to Pricing */
+.megaItemPro > :not(.upgradeHint) {
+  opacity: 0.55;
+}
+.upgradeHint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ba7517;
+}
 .mobileLinkLocked {
   opacity: 0.55;
   cursor: not-allowed;
@@ -143,15 +152,6 @@
   color: var(--text-muted);
 }
 
-/* The red asterisk after "My Space" */
-.mySpaceMark {
-  margin-left: 1px;
-  color: #e5484d;
-  font-size: 13px;
-  font-weight: 500;
-  vertical-align: super;
-  line-height: 0;
-}
 @keyframes authFadeIn {
   from {
     opacity: 0;

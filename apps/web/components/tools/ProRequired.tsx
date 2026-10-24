@@ -24,7 +24,7 @@ export default function ProRequired({ toolName, children }: { toolName: string; 
       </div>
       <div className={styles.resultTitle}>{toolName} is part of Pro</div>
       <p className={styles.muted} style={{ maxWidth: 440, textAlign: "center", margin: 0 }}>
-        Pro adds {toolName}, AI answers across up to 20 files, 50 AI questions a day and 10 GB of storage. ₹{PRO_PRICE_RUPEES} for 30 days, no auto-renewal.
+        Pro adds Edit PDF, Word to PDF, Remove PDF pages, AI answers across up to 20 files, 50 AI questions a day and 10 GB of storage. ₹{PRO_PRICE_RUPEES} for 30 days, no auto-renewal.
       </p>
       <Link href="/pricing" className={styles.primary}>
         See Pro

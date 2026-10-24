@@ -1,3 +1,4 @@
+import type { PlanName } from "./plan";
 import { defaultToolRegistry, ITool } from "@vaultdocai/core";
 import { TOOL_PAGES } from "./toolPages";
 
@@ -33,6 +34,17 @@ export function needsLogin(tool: ITool): boolean {
 export function needsPro(tool: ITool): boolean {
   return !!TOOL_PAGES[tool.id]?.proRequired;
 }
+
+export type ToolLock = "login" | "pro" | null;
+
+/** Why a tool can't be opened right now: logged out (account tools) or on Free (Pro tools). */
+export function toolLock(tool: ITool, loggedIn: boolean, plan: PlanName | null): ToolLock {
+  if (needsLogin(tool) && !loggedIn) return "login";
+  if (needsPro(tool) && plan === "free") return "pro";
+  return null;
+}
+
+export const PRO_TIP = "Upgrade to Pro";
 
 /** A tool is live once the web app has a page for it (see toolPages.ts). */
 export function isComingSoon(tool: ITool): boolean {

@@ -18,7 +18,7 @@ export default function ToolWorkspace({ page }: { page: ToolPage }) {
   const workspace = <Workspace page={page} />;
   const tool = page.proRequired ? <ProRequired toolName={page.heading}>{workspace}</ProRequired> : workspace;
   return page.loginRequired ? (
-    <LoginRequired toolName={page.heading} local={page.local}>
+    <LoginRequired toolName={page.heading} local={page.local} pro={page.proRequired}>
       {tool}
     </LoginRequired>
   ) : (

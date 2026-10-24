@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getToolGroups, isComingSoon, needsLogin, needsPro } from "../../lib/tools";
+import { getToolGroups, isComingSoon, needsLogin, needsPro, PRO_TIP, toolLock } from "../../lib/tools";
+import { usePlan } from "../../lib/plan";
 import ProTag from "../ProTag";
 import { useAuth } from "../AuthProvider";
 import LoginMark, { LOGIN_TIP } from "../LoginMark";
@@ -100,6 +101,7 @@ const LockIcon = ({ size = 14 }: { size?: number }) => (
 export default function ToolCards() {
   const { user, loading, wasLoggedIn } = useAuth();
   const loggedIn = !!user || (loading && wasLoggedIn);
+  const plan = usePlan();
   const groups = getToolGroups();
   // Phones have no hover: a tap on a locked card shows its tooltip (tap elsewhere or Escape hides it)
   const [tipFor, setTipFor] = useState<string | null>(null);
@@ -145,7 +147,26 @@ export default function ToolCards() {
                 </span>
               );
 
-              if (loginTool && !loggedIn) {
+              const lock = toolLock(tool, loggedIn, plan);
+              // Pro tool for someone on Free: dimmed, and it leads to Pricing
+              if (lock === "pro") {
+                return (
+                  <Link key={tool.id} href="/pricing" className={`${styles.card} ${styles.proLocked}`} style={accent} aria-label={`${tool.name}: ${PRO_TIP}`}>
+                    <Icon kind={kind} />
+                    <span className={styles.text}>
+                      <span className={styles.name}>
+                        {tool.name}
+                        <ProTag />
+                      </span>
+                      <span className={styles.upgradeLine}>
+                        <LockIcon size={11} /> {PRO_TIP}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              }
+
+              if (lock === "login") {
                 // Locked: not a link. Hover/focus (or a tap on phones) explains, with a way to log in
                 const tipId = `tip-${tool.id}`;
                 return (

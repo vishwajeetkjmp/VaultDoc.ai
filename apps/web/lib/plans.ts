@@ -67,6 +67,8 @@ export const PLAN_TABS: PlanTab[] = [
         cta: { label: "Log in to upgrade", href: "/login?next=/pricing", checkout: true },
         featuresTitle: "Everything in Free, plus:",
         features: [
+          "Edit PDF: add text, sign, white out and redact",
+          "Word to PDF and Remove PDF pages",
           "Ask AI across up to 20 files at once",
           "50 AI questions a day",
           "10 GB storage, files up to 50 MB",

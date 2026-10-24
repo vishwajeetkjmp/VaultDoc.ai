@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getToolGroups, isComingSoon, needsLogin, needsPro } from "../lib/tools";
+import { getToolGroups, isComingSoon, needsLogin, needsPro, PRO_TIP, toolLock } from "../lib/tools";
+import { usePlan } from "../lib/plan";
 import ProTag from "./ProTag";
 import { useAuth } from "./AuthProvider";
 import LoginMark, { LOGIN_TIP } from "./LoginMark";
@@ -21,6 +22,7 @@ export default function ToolDropdown() {
   const { user, loading, wasLoggedIn } = useAuth();
   // Before Firebase answers, assume last visit's state so the asterisk doesn't flip colour
   const loggedIn = !!user || (loading && wasLoggedIn);
+  const plan = usePlan();
 
   useEffect(() => {
     if (!open) return;
@@ -62,8 +64,19 @@ export default function ToolDropdown() {
                     </span>
                   );
                   const desc = tool.description && <span className={styles.megaDesc}>{tool.description}</span>;
+                  const lock = toolLock(tool, loggedIn, plan);
+                  // Pro tools on Free: still clickable, but lead to Pricing
+                  if (lock === "pro") {
+                    return (
+                      <Link key={tool.id} href="/pricing" role="menuitem" className={`${styles.megaItem} ${styles.megaItemPro}`} aria-label={`${tool.name}: ${PRO_TIP}`}>
+                        {name}
+                        {desc}
+                        <span className={styles.upgradeHint}>🔒 {PRO_TIP}</span>
+                      </Link>
+                    );
+                  }
                   // Locked for visitors: not clickable, and hovering explains why
-                  return loginTool && !loggedIn ? (
+                  return lock === "login" ? (
                     <span key={tool.id} role="menuitem" aria-disabled="true" tabIndex={0} className={`${styles.megaItem} ${styles.megaItemLocked}`} data-tip={LOGIN_TIP} aria-label={`${tool.name}: ${LOGIN_TIP}`}>
                       {name}
                       {desc}

@@ -6,13 +6,14 @@ import { defineString } from "firebase-functions/params";
 import { logger } from "firebase-functions/v2";
 import { onRequest } from "firebase-functions/v2/https";
 import { GoogleAuth } from "google-auth-library";
+import { planOf } from "./plans";
 import { bumpDaily } from "./stats";
 
 /**
  * Word (.docx / .doc) → PDF for the free tools.
  *
- * Only for logged-in users with a verified email (the browser sends their
- * Firebase ID token). The browser POSTs the file; this function checks it,
+ * Only for Pro members with a verified email (the browser sends their
+ * Firebase ID token; the plan is read from users/{uid}, which knows when Pro ends). The browser POSTs the file; this function checks it,
  * rate-limits the account, and passes it to a private Gotenberg (LibreOffice) service on
  * Cloud Run, which only this function can call. The document is held in
  * memory only and never stored.
@@ -103,6 +104,10 @@ export const convertDocument = onRequest(
     }
     if (!user.email_verified) {
       res.status(403).json({ error: "Please verify your email to use this tool." });
+      return;
+    }
+    if (planOf(await getFirestore().doc(`users/${user.uid}`).get()) !== "pro") {
+      res.status(403).json({ error: "Word to PDF is part of VaultDoc Pro." });
       return;
     }
     const body = req.rawBody;
