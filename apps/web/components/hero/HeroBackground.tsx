@@ -63,16 +63,15 @@ export default function HeroBackground() {
   }, []);
 
   return (
-    // Covers the whole hero; the animation strip sits vertically centred behind the text
+    // Fills whatever box the hero gives it (all of the hero on laptops, one row on phones), strip centred
     <div
       aria-hidden
       style={{
-        position: "absolute",
-        inset: 0,
+        position: "relative",
+        height: "100%",
         display: "flex",
         alignItems: "center",
         pointerEvents: "none",
-        zIndex: 0,
       }}
     >
       <div
@@ -80,7 +79,6 @@ export default function HeroBackground() {
           position: "relative",
           width: "100%",
           height: HERO_ANIMATION_HEIGHT,
-          // Faded so the headline in front stays easy to read
           opacity: HERO_ANIMATION_OPACITY,
         }}
       >

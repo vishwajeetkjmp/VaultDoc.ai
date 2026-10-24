@@ -13,6 +13,17 @@ const ImageEditor = dynamic(() => import("./ImageEditor"), { ssr: false, loading
 const OfficeConverter = dynamic(() => import("./OfficeConverter"), { ssr: false, loading });
 
 export default function ToolWorkspace({ page }: { page: ToolPage }) {
+  const tool = <Workspace page={page} />;
+  return page.loginRequired ? (
+    <LoginRequired toolName={page.heading} local={page.local}>
+      {tool}
+    </LoginRequired>
+  ) : (
+    tool
+  );
+}
+
+function Workspace({ page }: { page: ToolPage }) {
   switch (page.kind) {
     case "images-to-pdf":
       return <PdfBuilder mode="images" accept={page.accept} acceptLabel={page.acceptLabel} />;
@@ -23,10 +34,6 @@ export default function ToolWorkspace({ page }: { page: ToolPage }) {
     case "image-edit":
       return <ImageEditor />;
     case "office":
-      return (
-        <LoginRequired toolName={page.heading}>
-          <OfficeConverter accept={page.accept} acceptLabel={page.acceptLabel} />
-        </LoginRequired>
-      );
+      return <OfficeConverter accept={page.accept} acceptLabel={page.acceptLabel} />;
   }
 }

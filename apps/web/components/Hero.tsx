@@ -1,96 +1,38 @@
 import Link from "next/link";
 import HeroBackground from "./hero/HeroBackground";
 import HeroPrimaryButton from "./HeroPrimaryButton";
+import ToolCards from "./home/ToolCards";
+import styles from "./home/hero.module.css";
 
+/** Home hero (headline above the animation on laptops, below it on phones; see hero.module.css), then the free tools. */
 export default function Hero() {
   return (
-    <section style={{ position: "relative", overflow: "hidden" }}>
-      {/* Robot-and-vault animation behind the text */}
-      <HeroBackground />
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          maxWidth: "860px",
-          margin: "0 auto",
-          padding: "100px 24px 80px",
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-block",
-            background: "var(--bg-elevated)",
-            border: "1px solid var(--border)",
-            borderRadius: "999px",
-            padding: "6px 16px",
-            fontSize: "13px",
-            color: "var(--text-muted)",
-            marginBottom: "24px",
-          }}
-        >
-          🔒 Private to your account · AI-powered
+    <>
+      <section className={styles.hero}>
+        <div className={styles.badgeRow}>
+          <span className={styles.badge}>🔒 Private to your account · AI-powered</span>
         </div>
 
-        <h1
-          style={{
-            fontSize: "clamp(34px, 7vw, 52px)",
-            fontWeight: 800,
-            lineHeight: 1.1,
-            marginBottom: "20px",
-            letterSpacing: "-1px",
-          }}
-        >
-          Understand every document in seconds.
-        </h1>
+        <div className={styles.copy}>
+          <h1 className={styles.title}>Understand every document in seconds.</h1>
+          <p className={styles.lead}>
+            Upload contracts, reports, and invoices. Ask questions in plain language and get instant answers grounded in your own files.
+          </p>
+        </div>
 
-        <p
-          style={{
-            fontSize: "19px",
-            color: "var(--text-muted)",
-            maxWidth: "620px",
-            margin: "0 auto 36px",
-          }}
-        >
-          Upload contracts, reports, and invoices. Ask questions in plain language
-          and get instant answers grounded in your own files.
-        </p>
+        {/* Robot-and-vault animation on its own row, so it never runs through the text */}
+        <div className={styles.animation}>
+          <HeroBackground />
+        </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "14px",
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <HeroPrimaryButton
-            style={{
-              background: "var(--primary)",
-              color: "#fff",
-              fontSize: "16px",
-              fontWeight: 600,
-              padding: "14px 28px",
-              borderRadius: "10px",
-            }}
-          />
-          <Link
-            href="/about"
-            style={{
-              background: "var(--bg-elevated)",
-              color: "var(--text)",
-              border: "1px solid var(--border)",
-              fontSize: "16px",
-              fontWeight: 600,
-              padding: "14px 28px",
-              borderRadius: "10px",
-            }}
-          >
+        <div className={styles.actions}>
+          <HeroPrimaryButton className={styles.primary} />
+          <Link href="/about" className={styles.secondary}>
             Learn more
           </Link>
         </div>
-      </div>
-    </section>
+      </section>
+      <ToolCards />
+    </>
   );
 }
