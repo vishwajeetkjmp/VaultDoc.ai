@@ -192,7 +192,7 @@
 
 /* ---------- Locked tools (need an account) ---------- */
 .locked {
-  cursor: not-allowed;
+  cursor: pointer;
 }
 .locked .icon,
 .locked .name,
@@ -301,15 +301,12 @@
   }
 }
 
-/* Pro tool for someone on Free: dimmed icon and name; the description line becomes the way to upgrade */
-.proLocked > .icon,
-.proLocked .name {
-  opacity: 0.55;
-}
-.upgradeLine {
+/* A Pro tool for someone on Free: the description line says how to get it */
+.locked .upgradeLine {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  opacity: 1;
   font-size: 13px;
   font-weight: 600;
   color: #ba7517;

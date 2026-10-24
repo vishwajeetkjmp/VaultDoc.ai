@@ -106,27 +106,12 @@
   height: 36px;
 }
 /* Asterisk on tools that need an account: red = locked (logged out), green = unlocked */
-.markLocked,
-.markUnlocked {
-  margin-left: 2px;
-  font-size: 13px;
-  font-weight: 600;
-  vertical-align: super;
-  line-height: 0;
-}
-.markLocked {
-  color: #e5484d;
-}
-.markUnlocked {
-  color: #30a46c;
-}
-/* Locked menu item: dimmed, not clickable, explains itself on hover */
+/* Locked menu item: dimmed, explains itself on hover; a click leads to log in or Pricing */
 .megaItemLocked {
   position: relative;
-  cursor: not-allowed;
 }
 /* Dim the text, not the item, so the tooltip stays fully readable */
-.megaItemLocked > * {
+.megaItemLocked > :not(.upgradeHint) {
   opacity: 0.55;
 }
 /* Two classes, so this beats the normal .megaItem hover highlight defined further down */
@@ -156,18 +141,14 @@
   opacity: 1;
   transform: none;
 }
-/* Pro tool for someone on Free: dimmed, but it leads to Pricing */
-.megaItemPro > :not(.upgradeHint) {
-  opacity: 0.55;
-}
 .upgradeHint {
   font-size: 12px;
   font-weight: 600;
   color: #ba7517;
 }
-.mobileLinkLocked {
+/* Locked tool in the phone menu: the name is dimmed, the reason next to it stays readable */
+.mobileLinkLocked > :first-child {
   opacity: 0.55;
-  cursor: not-allowed;
 }
 .lockedNote {
   font-size: 12px;

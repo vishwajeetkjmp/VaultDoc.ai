@@ -6,14 +6,14 @@ import { defineString } from "firebase-functions/params";
 import { logger } from "firebase-functions/v2";
 import { onRequest } from "firebase-functions/v2/https";
 import { GoogleAuth } from "google-auth-library";
-import { planOf } from "./plans";
 import { bumpDaily } from "./stats";
 
 /**
  * Word (.docx / .doc) → PDF for the free tools.
  *
- * Only for Pro members with a verified email (the browser sends their
- * Firebase ID token; the plan is read from users/{uid}, which knows when Pro ends). The browser POSTs the file; this function checks it,
+ * Logged-in users with a verified email (the browser sends their Firebase ID token) can convert
+ * .docx and .doc, PER_HOUR an hour. Without logging in, .docx only: the website allows 10 a day per
+ * browser, and this function allows ANON_PER_DAY a day per network address as a safety limit. The browser POSTs the file; this function checks it,
  * rate-limits the account, and passes it to a private Gotenberg (LibreOffice) service on
  * Cloud Run, which only this function can call. The document is held in
  * memory only and never stored.
@@ -22,6 +22,8 @@ const GOTENBERG_URL = defineString("GOTENBERG_URL", { description: "Base URL of 
 
 const MAX_BYTES = 20 * 1024 * 1024;
 const PER_HOUR = 10;
+/** Without an account: per network address per day. Generous, since many phones share one address. */
+const ANON_PER_DAY = 50;
 
 const ALLOWED_ORIGINS = [
   "http://localhost:3000",
@@ -71,23 +73,28 @@ export async function convertUsage(uid: string): Promise<number> {
   return Number((await getFirestore().doc(`toolRateLimits/${key}_${hour}`).get()).get("count")) || 0;
 }
 
-/** Allows PER_HOUR conversions per account per hour. Accounts are stored as a hash, not the raw user id. */
-async function withinLimit(uid: string): Promise<boolean> {
-  const hour = Math.floor(Date.now() / 3_600_000);
-  const key = createHash("sha256").update(`vaultdoc-convert:${uid}`).digest("hex").slice(0, 32);
-  const ref = getFirestore().doc(`toolRateLimits/${key}_${hour}`);
+/** Counts one conversion in a window and says whether it's allowed. Keys are hashes, never raw ids or addresses. */
+async function withinLimit(raw: string, window: number, max: number, extra: Record<string, string>): Promise<boolean> {
+  const slot = Math.floor(Date.now() / window);
+  const key = createHash("sha256").update(raw).digest("hex").slice(0, 32);
+  const ref = getFirestore().doc(`toolRateLimits/${key}_${slot}`);
   return getFirestore().runTransaction(async (tx) => {
     const count = Number((await tx.get(ref)).get("count")) || 0;
-    if (count >= PER_HOUR) return false;
+    if (count >= max) return false;
     tx.set(
       ref,
-      // expireAt lets a Firestore TTL policy clean these up automatically; uid lets admins spot abuse
-      { count: FieldValue.increment(1), expireAt: Timestamp.fromMillis((hour + 2) * 3_600_000), uid, kind: "convert" },
+      // expireAt lets a Firestore TTL policy clean these up automatically
+      { count: FieldValue.increment(1), expireAt: Timestamp.fromMillis((slot + 2) * window), ...extra },
       { merge: true },
     );
     return true;
   });
 }
+
+/** Allows PER_HOUR conversions per account per hour (uid kept so admins can spot abuse). */
+const accountWithinLimit = (uid: string) => withinLimit(`vaultdoc-convert:${uid}`, 3_600_000, PER_HOUR, { uid, kind: "convert" });
+/** Allows ANON_PER_DAY conversions without an account per network address per day. */
+const addressWithinLimit = (ip: string) => withinLimit(`vaultdoc-convert-ip:${ip}`, 86_400_000, ANON_PER_DAY, { kind: "convert-anon" });
 
 export const convertDocument = onRequest(
   { cors: ALLOWED_ORIGINS, memory: "512MiB", timeoutSeconds: 120, maxInstances: 5, concurrency: 20 },
@@ -96,18 +103,15 @@ export const convertDocument = onRequest(
       res.status(405).json({ error: "Use POST." });
       return;
     }
+    // A login is optional for .docx; a token that's sent must be valid
     const token = String(req.headers.authorization ?? "").match(/^Bearer (.+)$/)?.[1];
     const user = token ? await getAuth().verifyIdToken(token).catch(() => null) : null;
-    if (!user) {
-      res.status(401).json({ error: "Please log in to use this tool." });
+    if (token && !user) {
+      res.status(401).json({ error: "Your login has expired. Please log in again." });
       return;
     }
-    if (!user.email_verified) {
+    if (user && !user.email_verified) {
       res.status(403).json({ error: "Please verify your email to use this tool." });
-      return;
-    }
-    if (planOf(await getFirestore().doc(`users/${user.uid}`).get()) !== "pro") {
-      res.status(403).json({ error: "Word to PDF is part of VaultDoc Pro." });
       return;
     }
     const body = req.rawBody;
@@ -125,8 +129,18 @@ export const convertDocument = onRequest(
       return;
     }
 
-    if (!(await withinLimit(user.uid))) {
+    if (!user && !isDocx) {
+      res.status(401).json({ error: "Older .doc files need a free account. Please log in to convert them." });
+      return;
+    }
+    if (user && !(await accountWithinLimit(user.uid))) {
       res.status(429).json({ error: `You've reached ${PER_HOUR} conversions this hour. Please try again later.` });
+      return;
+    }
+    // The visitor's address is the first one in X-Forwarded-For (Google's front end adds it)
+    const address = String(req.headers["x-forwarded-for"] ?? req.ip ?? "unknown").split(",")[0].trim();
+    if (!user && !(await addressWithinLimit(address))) {
+      res.status(429).json({ error: "Too many free conversions from this network today. Log in (it's free) to keep converting." });
       return;
     }
 

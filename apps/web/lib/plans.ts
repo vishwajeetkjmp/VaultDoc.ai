@@ -51,6 +51,7 @@ export const PLAN_TABS: PlanTab[] = [
           "Files up to 20 MB each",
           "Folders, search, drag & drop upload",
           "ZIP upload, unpacked into folders",
+          "Word to PDF, merge, rotate and more PDF tools",
           "Secure Vault with end-to-end encryption",
           "Reminders before documents expire",
           "Works on phone and desktop",
@@ -68,7 +69,7 @@ export const PLAN_TABS: PlanTab[] = [
         featuresTitle: "Everything in Free, plus:",
         features: [
           "Edit PDF: add text, sign, white out and redact",
-          "Word to PDF and Remove PDF pages",
+          "Remove PDF pages",
           "Ask AI across up to 20 files at once",
           "50 AI questions a day",
           "10 GB storage, files up to 50 MB",

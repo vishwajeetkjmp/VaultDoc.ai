@@ -12,3 +12,11 @@
   letter-spacing: 0.02em;
   vertical-align: 2px;
 }
+.mark {
+  margin-left: 2px;
+  color: #ef9f27;
+  font-size: 13px;
+  font-weight: 700;
+  vertical-align: super;
+  line-height: 0;
+}

@@ -1,6 +1,6 @@
 import type { PlanName } from "./plan";
 import { defaultToolRegistry, ITool } from "@vaultdocai/core";
-import { TOOL_PAGES } from "./toolPages";
+import { TOOL_PAGES, ToolAccess } from "./toolPages";
 
 /**
  * Thin UI helper over the shared core registry.
@@ -25,26 +25,40 @@ export function getTool(id: string): ITool | undefined {
   return defaultToolRegistry.get(id);
 }
 
-/** Tools that need a logged-in, verified account (Word and DOC to PDF, which run on a server). */
-export function needsLogin(tool: ITool): boolean {
-  return !!TOOL_PAGES[tool.id]?.loginRequired;
+/** Who can use a tool (see ToolAccess in toolPages.ts). Tools without a page count as open. */
+export function accessOf(tool: ITool): ToolAccess {
+  return TOOL_PAGES[tool.id]?.access ?? "open";
 }
 
-/** Tools only Pro members can use (Edit PDF). */
+/** Pro tools get the gold asterisk and the Pro tag wherever they're listed. */
 export function needsPro(tool: ITool): boolean {
-  return !!TOOL_PAGES[tool.id]?.proRequired;
+  return accessOf(tool) === "pro";
 }
 
-export type ToolLock = "login" | "pro" | null;
+/**
+ * Why a tool can't be opened right now, with the tooltip that says so and where a click should go.
+ * Every listing (desktop menu, phone menu, home cards) uses this, so they always agree.
+ */
+export type ToolLock = {
+  kind: "login" | "pro";
+  /** Full sentence: desktop hover tooltip and screen readers */
+  tip: string;
+  /** Short version for small pills (cards, phone menu) */
+  short: string;
+  href: string;
+} | null;
 
-/** Why a tool can't be opened right now: logged out (account tools) or on Free (Pro tools). */
 export function toolLock(tool: ITool, loggedIn: boolean, plan: PlanName | null): ToolLock {
-  if (needsLogin(tool) && !loggedIn) return "login";
-  if (needsPro(tool) && plan === "free") return "pro";
+  const access = accessOf(tool);
+  const login = `/login?next=${encodeURIComponent(tool.route)}`;
+  if (access === "pro") {
+    if (!loggedIn) return { kind: "login", tip: "A Pro tool. Log in and upgrade to use it", short: "Pro tool · Log in to upgrade", href: login };
+    if (plan === "free") return { kind: "pro", tip: `Upgrade to Pro to use ${tool.name}`, short: "Upgrade to Pro", href: "/pricing" };
+    return null;
+  }
+  if (access === "account" && !loggedIn) return { kind: "login", tip: "Log in to use, it's free", short: "Log in to use, it's free", href: login };
   return null;
 }
-
-export const PRO_TIP = "Upgrade to Pro";
 
 /** A tool is live once the web app has a page for it (see toolPages.ts). */
 export function isComingSoon(tool: ITool): boolean {

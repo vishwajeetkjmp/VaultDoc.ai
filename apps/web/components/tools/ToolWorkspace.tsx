@@ -16,9 +16,9 @@ const PdfEditor = dynamic(() => import("./PdfEditor"), { ssr: false, loading });
 
 export default function ToolWorkspace({ page }: { page: ToolPage }) {
   const workspace = <Workspace page={page} />;
-  const tool = page.proRequired ? <ProRequired toolName={page.heading}>{workspace}</ProRequired> : workspace;
-  return page.loginRequired ? (
-    <LoginRequired toolName={page.heading} local={page.local} pro={page.proRequired}>
+  const tool = page.access === "pro" ? <ProRequired toolName={page.heading}>{workspace}</ProRequired> : workspace;
+  return page.access === "pro" || page.access === "account" ? (
+    <LoginRequired toolName={page.heading} local={page.local} pro={page.access === "pro"}>
       {tool}
     </LoginRequired>
   ) : (
@@ -37,7 +37,7 @@ function Workspace({ page }: { page: ToolPage }) {
     case "image-edit":
       return <ImageEditor />;
     case "office":
-      return <OfficeConverter accept={page.accept} acceptLabel={page.acceptLabel} />;
+      return <OfficeConverter accept={page.accept} acceptLabel={page.acceptLabel} trial={page.access === "word-trial"} />;
     case "edit-pdf":
       return <PdfEditor />;
   }

@@ -5,7 +5,7 @@ import Navbar from "../../../components/Navbar";
 import SiteFooter from "../../../components/SiteFooter";
 import ToolWorkspace from "../../../components/tools/ToolWorkspace";
 import styles from "../../../components/tools/tools.module.css";
-import { TOOL_PAGES } from "../../../lib/toolPages";
+import { TOOL_PAGES, WORD_TRIAL_PER_DAY } from "../../../lib/toolPages";
 import { getFreeTools, getTool } from "../../../lib/tools";
 
 export function generateStaticParams() {
@@ -41,7 +41,14 @@ export default function ToolPage({ params }: { params: { toolId: string } }) {
           <p className={styles.subtitle}>{page.subheading}</p>
           <span className={styles.badge}>
             {page.local ? "🔒 Private: files never leave your device" : "🔒 Encrypted upload, deleted right after conversion"}
-            {page.proRequired ? " · Pro" : page.loginRequired ? " · Free with an account" : " · Free · No sign-up"}
+            {
+              {
+                open: " · Free · No sign-up",
+                "word-trial": ` · Free · ${WORD_TRIAL_PER_DAY} a day without sign-up`,
+                account: " · Free with an account",
+                pro: " · Pro",
+              }[page.access]
+            }
           </span>
         </section>
 

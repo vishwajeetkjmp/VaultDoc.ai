@@ -7,10 +7,9 @@ import ToolDropdown from "./ToolDropdown";
 import ThemeMenu from "./ThemeMenu";
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "./AuthProvider";
-import { getToolGroups, isComingSoon, needsLogin, needsPro, PRO_TIP, toolLock } from "../lib/tools";
+import { getToolGroups, isComingSoon, needsPro, toolLock } from "../lib/tools";
 import { usePlan } from "../lib/plan";
 import ProTag from "./ProTag";
-import LoginMark, { LOGIN_TIP } from "./LoginMark";
 import { applyTheme, getStoredTheme, ThemeName, THEMES } from "../lib/theme";
 import { withNext } from "../lib/nav";
 import styles from "./navbar.module.css";
@@ -145,34 +144,29 @@ export default function Navbar() {
                     <ul id={id} className={styles.mobileToolList}>
                       {tools.map((tool) => (
                         <li key={tool.id}>
-                          {toolLock(tool, !!user, plan) === "pro" ? (
-                            <Link href="/pricing" className={`${styles.mobileTool} ${styles.megaItemPro}`}>
+                          {(() => {
+                            const lock = toolLock(tool, !!user, plan);
+                            const name = (
                               <span>
                                 {tool.name}
-                                <ProTag />
-                              </span>
-                              <span className={styles.upgradeHint}>🔒 {PRO_TIP}</span>
-                            </Link>
-                          ) : needsLogin(tool) && !user ? (
-                            // Phones have no hover, so the reason is written next to the locked tool
-                            <span className={`${styles.mobileTool} ${styles.mobileLinkLocked}`} aria-disabled="true">
-                              <span>
-                                {tool.name}
-                                <LoginMark unlocked={false} />
                                 {needsPro(tool) && <ProTag />}
                               </span>
-                              <span className={styles.lockedNote}>{LOGIN_TIP}</span>
-                            </span>
-                          ) : (
-                            <Link href={tool.route} className={styles.mobileTool}>
-                              <span>
-                                {tool.name}
-                                {needsLogin(tool) && <LoginMark unlocked />}
-                                {needsPro(tool) && <ProTag />}
-                              </span>
-                              {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
-                            </Link>
-                          )}
+                            );
+                            // Phones have no hover, so the reason is written under the locked tool
+                            return lock ? (
+                              <Link href={lock.href} className={`${styles.mobileTool} ${styles.mobileLinkLocked}`} aria-label={`${tool.name}: ${lock.tip}`}>
+                                {name}
+                                <span className={lock.kind === "pro" ? styles.upgradeHint : styles.lockedNote}>
+                                  {lock.kind === "pro" ? `🔒 ${lock.short}` : lock.short}
+                                </span>
+                              </Link>
+                            ) : (
+                              <Link href={tool.route} className={styles.mobileTool}>
+                                {name}
+                                {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
+                              </Link>
+                            );
+                          })()}
                         </li>
                       ))}
                     </ul>

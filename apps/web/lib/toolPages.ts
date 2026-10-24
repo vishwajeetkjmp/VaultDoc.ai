@@ -27,11 +27,20 @@ export type ToolPage = ToolKind & {
   related: string[];
   /** Runs fully in the browser (shown as a privacy promise) */
   local: boolean;
-  /** Only logged-in users with a verified email can use it (server tools cost money to run; some others are account perks) */
-  loginRequired?: boolean;
-  /** Only for Pro members (also set loginRequired, so visitors see it locked) */
-  proRequired?: boolean;
+  /** Who can use it; see ToolAccess */
+  access: ToolAccess;
 };
+
+/**
+ * open        anyone, no sign-up
+ * word-trial  anyone, 10 a day without an account (counted in the browser and, per address, on the server); unlimited-ish with one
+ * account     logged-in users with a verified email (free)
+ * pro         Pro members
+ */
+export type ToolAccess = "open" | "word-trial" | "account" | "pro";
+
+/** Conversions a day without an account (Word to PDF) */
+export const WORD_TRIAL_PER_DAY = 10;
 
 const IMAGE_ACCEPT = ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
 
@@ -55,6 +64,7 @@ const imagesToPdf = (fmt: string, ext: string): ToolPage => ({
   ],
   related: ["merge-pdf", "rotate-pdf", "resize-crop-image"],
   local: true,
+  access: "open",
 });
 
 const ORGANIZE_IDS = { reorder: "reorder-pdf-pages", rotate: "rotate-pdf", remove: "remove-pdf-pages" } as const;
@@ -82,39 +92,48 @@ const organize = (
   ],
   related: ["merge-pdf", ...Object.values(ORGANIZE_IDS)].filter((id) => id !== ORGANIZE_IDS[focus]),
   local: true,
+  access: "account",
 });
 
-const office = (fmt: string, ext: string): ToolPage => ({
+const WORD_FAQ = [
+  {
+    q: "What happens to my document?",
+    a: "It's sent over an encrypted connection to our converter in India, turned into a PDF, and deleted immediately. We don't store or read it.",
+  },
+  { q: "Will the formatting match Word?", a: "Very closely. Unusual fonts may be replaced with similar ones if they aren't embedded in the document." },
+];
+
+const office = (fmt: string, ext: string, accept: string, access: ToolAccess, faq: { q: string; a: string }[]): ToolPage => ({
   kind: "office",
-  accept: ".docx,.doc,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword",
-  acceptLabel: `${ext} (Word .docx and .doc)`,
+  accept,
+  acceptLabel: ext,
   multiple: false,
   heading: `${fmt} to PDF`,
   subheading: `Convert ${fmt} documents to PDF with layout, fonts and tables preserved.`,
-  seoTitle: `${fmt} to PDF converter: keeps formatting | VaultDocAI`,
-  seoDescription: `Convert ${ext} to PDF. Keeps fonts, tables, headers and page breaks. Files are deleted right after conversion.`,
-  steps: ["Log in with VaultDoc Pro", `Add your ${ext} file`, "Download your PDF"],
-  faq: [
-    {
-      q: "What happens to my document?",
-      a: "It's sent over an encrypted connection to our converter in India, turned into a PDF, and deleted immediately. We don't store or read it.",
-    },
-    { q: "Will the formatting match Word?", a: "Very closely. Unusual fonts may be replaced with similar ones if they aren't embedded in the document." },
-    { q: "Why is it part of Pro?", a: "Converting runs on our own server for every document, so it's included with VaultDoc Pro rather than free." },
-    { q: "Is there a size limit?", a: "Files up to 20 MB, and a few conversions per hour per account to keep the service fast for everyone." },
-  ],
-  related: ["merge-pdf", "jpg-to-pdf", "remove-pdf-pages"],
+  seoTitle: `${fmt} to PDF converter: free, keeps formatting | VaultDocAI`,
+  seoDescription: `Convert ${ext} to PDF free. Keeps fonts, tables, headers and page breaks. Files are deleted right after conversion.`,
+  steps: access === "account" ? ["Log in to your free account", `Add your ${ext} file`, "Download your PDF"] : [`Add your ${ext} file`, "We convert it in seconds", "Download your PDF"],
+  faq: [...WORD_FAQ, ...faq],
+  related: ["merge-pdf", "jpg-to-pdf", "edit-pdf"],
   local: false,
-  loginRequired: true,
-  proRequired: true,
+  access,
 });
 
 export const TOOL_PAGES: Record<string, ToolPage> = {
   "jpg-to-pdf": imagesToPdf("JPG", "JPG/JPEG"),
   "png-to-pdf": imagesToPdf("PNG", "PNG"),
   "webp-to-pdf": imagesToPdf("WebP", "WebP"),
-  "word-to-pdf": office("Word", ".docx"),
-  "doc-to-pdf": office("DOC", ".doc"),
+  "word-to-pdf": office("Word", ".docx", ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document", "word-trial", [
+    {
+      q: "Do I need an account?",
+      a: `No. You can convert ${WORD_TRIAL_PER_DAY} documents a day without one. Log in (it's free) to keep converting.`,
+    },
+    { q: "Is there a size limit?", a: "Files up to 20 MB." },
+  ]),
+  "doc-to-pdf": office("DOC", ".doc", ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document", "account", [
+    { q: "Why do I need to log in?", a: "Older .doc files are converted on our server, so this tool is free with a VaultDoc account. Creating one takes a minute and needs no card." },
+    { q: "Is there a size limit?", a: "Files up to 20 MB, and a few conversions per hour per account to keep the service fast for everyone." },
+  ]),
   "merge-pdf": {
     kind: "merge",
     accept: ".pdf,application/pdf," + IMAGE_ACCEPT,
@@ -132,22 +151,20 @@ export const TOOL_PAGES: Record<string, ToolPage> = {
     ],
     related: ["reorder-pdf-pages", "remove-pdf-pages", "jpg-to-pdf"],
     local: true,
+    access: "open",
   },
-  // Free with an account (like Word and DOC to PDF), though they run in the browser
-  "reorder-pdf-pages": {
-    ...organize(
-      "reorder",
-      "Reorder PDF pages",
-      "See every page and drag them into the order you want.",
-      "Rearrange PDF pages by dragging thumbnails. Free with an account, and your PDF never leaves your device.",
-    ),
-    loginRequired: true,
-  },
+  // Free with an account, though they run in the browser
+  "reorder-pdf-pages": organize(
+    "reorder",
+    "Reorder PDF pages",
+    "See every page and drag them into the order you want.",
+    "Rearrange PDF pages by dragging thumbnails. Free with an account, and your PDF never leaves your device.",
+  ),
   "rotate-pdf": organize(
     "rotate",
     "Rotate PDF pages",
     "Fix sideways or upside-down pages: rotate one page or all of them.",
-    "Rotate PDF pages free online. Turn single pages or the whole document. Your PDF never leaves your device.",
+    "Rotate PDF pages free with an account. Turn single pages or the whole document. Your PDF never leaves your device.",
   ),
   "remove-pdf-pages": {
     ...organize(
@@ -156,8 +173,7 @@ export const TOOL_PAGES: Record<string, ToolPage> = {
       "Select the pages you don't need and download a cleaner PDF.",
       "Delete pages from a PDF with VaultDoc Pro. Pick pages visually and download. Your PDF never leaves your device.",
     ),
-    loginRequired: true,
-    proRequired: true,
+    access: "pro",
   },
   "edit-pdf": {
     kind: "edit-pdf",
@@ -180,8 +196,7 @@ export const TOOL_PAGES: Record<string, ToolPage> = {
     ],
     related: ["merge-pdf", "remove-pdf-pages", "rotate-pdf"],
     local: true,
-    loginRequired: true,
-    proRequired: true,
+    access: "pro",
   },
   "resize-crop-image": {
     kind: "image-edit",
@@ -203,5 +218,6 @@ export const TOOL_PAGES: Record<string, ToolPage> = {
     ],
     related: ["jpg-to-pdf", "png-to-pdf", "merge-pdf"],
     local: true,
+    access: "open",
   },
 };

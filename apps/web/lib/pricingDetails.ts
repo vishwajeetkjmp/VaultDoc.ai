@@ -28,7 +28,7 @@ export const COMPARE: Record<string, CompareSection[]> = {
         { label: "Images to PDF, merge, rotate, reorder", values: { free: true, pro: true, family: true } },
         { label: "Resize or crop images", values: { free: true, pro: true, family: true } },
         { label: "Edit PDF: text, signature, whiteout, redaction", values: { free: false, pro: true, family: true } },
-        { label: "Word and DOC to PDF", values: { free: false, pro: true, family: true } },
+        { label: "Word and DOC to PDF", values: { free: true, pro: true, family: true } },
         { label: "Remove PDF pages", values: { free: false, pro: true, family: true } },
       ],
     },
@@ -95,11 +95,11 @@ export const FAQ: FaqGroup[] = [
     items: [
       {
         q: "What do I get with VaultDoc Pro?",
-        a: "Everything in Free, plus Edit PDF (text, signatures, whiteout and redaction), Word to PDF, Remove PDF pages, AI answers across up to 20 files at once, 50 AI questions a day, 10 GB of storage with files up to 50 MB, and priority support.",
+        a: "Everything in Free, plus Edit PDF (text, signatures, whiteout and redaction), Remove PDF pages, AI answers across up to 20 files at once, 50 AI questions a day, 10 GB of storage with files up to 50 MB, and priority support.",
       },
       {
         q: "Is the Free plan really free?",
-        a: "Yes. Free includes 1 GB of private storage, the Secure Vault, sharing, PDF and image tools (images to PDF, merge, rotate, reorder, resize), and 10 AI questions a day about one file at a time. No card needed.",
+        a: "Yes. Free includes 1 GB of private storage, the Secure Vault, sharing, PDF and image tools (Word to PDF, images to PDF, merge, rotate, reorder, resize), and 10 AI questions a day about one file at a time. No card needed.",
       },
       {
         q: "What counts as an AI question?",

@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getToolGroups, isComingSoon, needsLogin, needsPro, PRO_TIP, toolLock } from "../lib/tools";
+import { getToolGroups, isComingSoon, needsPro, toolLock } from "../lib/tools";
 import { usePlan } from "../lib/plan";
 import ProTag from "./ProTag";
 import { useAuth } from "./AuthProvider";
-import LoginMark, { LOGIN_TIP } from "./LoginMark";
 import styles from "./navbar.module.css";
 
 /** "Free Tool" menu, grouped (PDF tools / Image tools). Opens on hover, click/tap or keyboard. */
@@ -20,7 +19,7 @@ export default function ToolDropdown() {
   const ref = useRef<HTMLDivElement>(null);
   const groups = getToolGroups();
   const { user, loading, wasLoggedIn } = useAuth();
-  // Before Firebase answers, assume last visit's state so the asterisk doesn't flip colour
+  // Before Firebase answers, assume last visit's state so locked tools don't flicker
   const loggedIn = !!user || (loading && wasLoggedIn);
   const plan = usePlan();
 
@@ -52,35 +51,24 @@ export default function ToolDropdown() {
               <div className={styles.megaHeading}>{group}</div>
               <div className={tools.length > 4 ? styles.megaGrid : undefined}>
                 {tools.map((tool) => {
-                  const loginTool = needsLogin(tool);
+                  const lock = toolLock(tool, loggedIn, plan);
                   const name = (
                     <span className={styles.megaName}>
                       <span>
                         {tool.name}
-                        {loginTool && <LoginMark unlocked={loggedIn} />}
                         {needsPro(tool) && <ProTag />}
                       </span>
                       {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
                     </span>
                   );
                   const desc = tool.description && <span className={styles.megaDesc}>{tool.description}</span>;
-                  const lock = toolLock(tool, loggedIn, plan);
-                  // Pro tools on Free: still clickable, but lead to Pricing
-                  if (lock === "pro") {
-                    return (
-                      <Link key={tool.id} href="/pricing" role="menuitem" className={`${styles.megaItem} ${styles.megaItemPro}`} aria-label={`${tool.name}: ${PRO_TIP}`}>
-                        {name}
-                        {desc}
-                        <span className={styles.upgradeHint}>🔒 {PRO_TIP}</span>
-                      </Link>
-                    );
-                  }
-                  // Locked for visitors: not clickable, and hovering explains why
-                  return lock === "login" ? (
-                    <span key={tool.id} role="menuitem" aria-disabled="true" tabIndex={0} className={`${styles.megaItem} ${styles.megaItemLocked}`} data-tip={LOGIN_TIP} aria-label={`${tool.name}: ${LOGIN_TIP}`}>
+                  // Locked: dimmed, hovering explains why, and a click goes where it can be unlocked (log in or Pricing)
+                  return lock ? (
+                    <Link key={tool.id} href={lock.href} role="menuitem" className={`${styles.megaItem} ${styles.megaItemLocked}`} data-tip={lock.tip} aria-label={`${tool.name}: ${lock.tip}`}>
                       {name}
                       {desc}
-                    </span>
+                      {lock.kind === "pro" && <span className={styles.upgradeHint}>🔒 {lock.short}</span>}
+                    </Link>
                   ) : (
                     <Link key={tool.id} href={tool.route} role="menuitem" className={styles.megaItem}>
                       {name}

@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getToolGroups, isComingSoon, needsLogin, needsPro, PRO_TIP, toolLock } from "../../lib/tools";
+import { getToolGroups, isComingSoon, needsPro, toolLock } from "../../lib/tools";
 import { usePlan } from "../../lib/plan";
 import ProTag from "../ProTag";
 import { useAuth } from "../AuthProvider";
-import LoginMark, { LOGIN_TIP } from "../LoginMark";
 import styles from "./toolCards.module.css";
 
 /** Icon and accent colour per tool kind (the `icon` key from @vaultdocai/core). */
@@ -132,42 +131,25 @@ export default function ToolCards() {
           <div className={styles.grid}>
             {tools.map((tool) => {
               const kind = KINDS[tool.id === "resize-crop-image" ? "crop" : (tool.icon ?? "doc")] ?? KINDS.doc;
-              const loginTool = needsLogin(tool);
               const soon = isComingSoon(tool);
               const accent = { "--accent": kind.color } as React.CSSProperties;
+              const name = (
+                <span className={styles.name}>
+                  {tool.name}
+                  {needsPro(tool) && <ProTag />}
+                  {soon && <span className={styles.soon}>Soon</span>}
+                </span>
+              );
               const body = (
                 <span className={styles.text}>
-                  <span className={styles.name}>
-                    {tool.name}
-                    {loginTool && <LoginMark unlocked={loggedIn} />}
-                    {needsPro(tool) && <ProTag />}
-                    {soon && <span className={styles.soon}>Soon</span>}
-                  </span>
+                  {name}
                   {tool.description && <span className={styles.desc}>{tool.description}</span>}
                 </span>
               );
 
               const lock = toolLock(tool, loggedIn, plan);
-              // Pro tool for someone on Free: dimmed, and it leads to Pricing
-              if (lock === "pro") {
-                return (
-                  <Link key={tool.id} href="/pricing" className={`${styles.card} ${styles.proLocked}`} style={accent} aria-label={`${tool.name}: ${PRO_TIP}`}>
-                    <Icon kind={kind} />
-                    <span className={styles.text}>
-                      <span className={styles.name}>
-                        {tool.name}
-                        <ProTag />
-                      </span>
-                      <span className={styles.upgradeLine}>
-                        <LockIcon size={11} /> {PRO_TIP}
-                      </span>
-                    </span>
-                  </Link>
-                );
-              }
-
-              if (lock === "login") {
-                // Locked: not a link. Hover/focus (or a tap on phones) explains, with a way to log in
+              if (lock) {
+                // Locked: not a link. Hover/focus (or a tap on phones) shows why, with the way to unlock it
                 const tipId = `tip-${tool.id}`;
                 return (
                   <div
@@ -185,20 +167,18 @@ export default function ToolCards() {
                   >
                     <Icon kind={kind} />
                     <span className={`${styles.text} ${styles.lockedText}`}>
-                      <span className={styles.name}>
-                        {tool.name}
-                        <LoginMark unlocked={false} />
-                        {needsPro(tool) && <ProTag />}
-                      </span>
-                      {tool.description && <span className={styles.desc}>{tool.description}</span>}
+                      {name}
+                      {/* On Free, a Pro tool says how to get it instead of what it does */}
+                      {lock.kind === "pro" ? (
+                        <span className={`${styles.desc} ${styles.upgradeLine}`}>
+                          <LockIcon size={11} /> {lock.short}
+                        </span>
+                      ) : (
+                        tool.description && <span className={styles.desc}>{tool.description}</span>
+                      )}
                       <span id={tipId} role="tooltip" className={styles.tip}>
-                        <Link
-                          href={`/login?next=${encodeURIComponent(tool.route)}`}
-                          className={styles.tipLink}
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label={`${LOGIN_TIP}: ${tool.name} is free with an account`}
-                        >
-                          <LockIcon size={12} /> Log in to use
+                        <Link href={lock.href} className={styles.tipLink} onClick={(e) => e.stopPropagation()} aria-label={`${tool.name}: ${lock.tip}`}>
+                          <LockIcon size={12} /> {lock.short}
                         </Link>
                       </span>
                     </span>
