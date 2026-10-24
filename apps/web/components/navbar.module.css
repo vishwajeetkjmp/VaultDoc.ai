@@ -43,6 +43,28 @@
 .link:hover {
   color: var(--text);
 }
+/* My Space: a soft pill in the accent colour, so logged-in people find their files at a glance */
+.mySpace {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: color-mix(in srgb, var(--primary) 65%, var(--text));
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+}
+.mySpace:hover,
+.mySpaceActive {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--text);
+}
+.mySpaceLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
 .chevron {
   margin-left: 6px;
   opacity: 0.75;
@@ -134,6 +156,15 @@
   opacity: 1;
   transform: none;
 }
+/* Pro tool for someone on Free: dimmed, but it leads to Pricing */
+.megaItemPro > :not(.upgradeHint) {
+  opacity: 0.55;
+}
+.upgradeHint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ba7517;
+}
 .mobileLinkLocked {
   opacity: 0.55;
   cursor: not-allowed;
@@ -143,15 +174,6 @@
   color: var(--text-muted);
 }
 
-/* The red asterisk after "My Space" */
-.mySpaceMark {
-  margin-left: 1px;
-  color: #e5484d;
-  font-size: 13px;
-  font-weight: 500;
-  vertical-align: super;
-  line-height: 0;
-}
 @keyframes authFadeIn {
   from {
     opacity: 0;

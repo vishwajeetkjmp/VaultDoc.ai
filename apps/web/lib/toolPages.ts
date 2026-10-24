@@ -92,20 +92,21 @@ const office = (fmt: string, ext: string): ToolPage => ({
   heading: `${fmt} to PDF`,
   subheading: `Convert ${fmt} documents to PDF with layout, fonts and tables preserved.`,
   seoTitle: `${fmt} to PDF converter: keeps formatting | VaultDocAI`,
-  seoDescription: `Convert ${ext} to PDF free. Keeps fonts, tables, headers and page breaks. Files are deleted right after conversion.`,
-  steps: ["Log in to your free account", `Add your ${ext} file`, "Download your PDF"],
+  seoDescription: `Convert ${ext} to PDF. Keeps fonts, tables, headers and page breaks. Files are deleted right after conversion.`,
+  steps: ["Log in with VaultDoc Pro", `Add your ${ext} file`, "Download your PDF"],
   faq: [
     {
       q: "What happens to my document?",
       a: "It's sent over an encrypted connection to our converter in India, turned into a PDF, and deleted immediately. We don't store or read it.",
     },
     { q: "Will the formatting match Word?", a: "Very closely. Unusual fonts may be replaced with similar ones if they aren't embedded in the document." },
-    { q: "Why do I need to log in?", a: "This tool runs on our server, so it's available with a free VaultDoc account. Creating one takes a minute and needs no card." },
+    { q: "Why is it part of Pro?", a: "Converting runs on our own server for every document, so it's included with VaultDoc Pro rather than free." },
     { q: "Is there a size limit?", a: "Files up to 20 MB, and a few conversions per hour per account to keep the service fast for everyone." },
   ],
   related: ["merge-pdf", "jpg-to-pdf", "remove-pdf-pages"],
   local: false,
   loginRequired: true,
+  proRequired: true,
 });
 
 export const TOOL_PAGES: Record<string, ToolPage> = {
@@ -153,9 +154,10 @@ export const TOOL_PAGES: Record<string, ToolPage> = {
       "remove",
       "Remove PDF pages",
       "Select the pages you don't need and download a cleaner PDF.",
-      "Delete pages from a PDF free with an account. Pick pages visually and download. Your PDF never leaves your device.",
+      "Delete pages from a PDF with VaultDoc Pro. Pick pages visually and download. Your PDF never leaves your device.",
     ),
     loginRequired: true,
+    proRequired: true,
   },
   "edit-pdf": {
     kind: "edit-pdf",

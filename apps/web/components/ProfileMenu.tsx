@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { User } from "firebase/auth";
 import Avatar from "./Avatar";
+import { PlanAvatar, PlanPill } from "./PlanBadge";
+import { usePlan } from "../lib/plan";
 import { signOutUser } from "../lib/auth";
 import { useInstall } from "../lib/pwa";
 import { getDisplayName, getFirstName } from "../lib/profile";
@@ -19,6 +21,7 @@ export default function ProfileMenu({ user }: { user: User }) {
   const [open, setOpen] = useState(false);
   const [iosHelp, setIosHelp] = useState(false);
   const install = useInstall();
+  const plan = usePlan();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,7 +60,9 @@ export default function ProfileMenu({ user }: { user: User }) {
           boxShadow: open ? "0 0 0 3px rgba(138,180,248,0.5)" : "none",
         }}
       >
-        <Avatar user={user} size={36} />
+        <PlanAvatar plan={plan}>
+          <Avatar user={user} size={36} />
+        </PlanAvatar>
       </button>
 
       {open && (
@@ -68,6 +73,7 @@ export default function ProfileMenu({ user }: { user: User }) {
           </div>
           <div style={styles.greeting}>Hi, {getFirstName(user)}!</div>
           {user.displayName && <div style={styles.fullName}>{name}</div>}
+          <PlanPill plan={plan} />
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
             <Link href="/dashboard" style={styles.manageBtn} onClick={() => setOpen(false)}>

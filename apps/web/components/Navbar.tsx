@@ -7,7 +7,8 @@ import ToolDropdown from "./ToolDropdown";
 import ThemeMenu from "./ThemeMenu";
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "./AuthProvider";
-import { getToolGroups, isComingSoon, needsLogin, needsPro } from "../lib/tools";
+import { getToolGroups, isComingSoon, needsLogin, needsPro, PRO_TIP, toolLock } from "../lib/tools";
+import { usePlan } from "../lib/plan";
 import ProTag from "./ProTag";
 import LoginMark, { LOGIN_TIP } from "./LoginMark";
 import { applyTheme, getStoredTheme, ThemeName, THEMES } from "../lib/theme";
@@ -20,6 +21,7 @@ export default function Navbar() {
   // While Firebase checks the session, lay the bar out as it looked last time, so nothing shifts
   const showMySpace = !!user || (loading && wasLoggedIn);
   const pathname = usePathname();
+  const plan = usePlan();
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeName>("dark");
   // Tool groups opened in the phone menu (all closed at first)
@@ -64,7 +66,11 @@ export default function Navbar() {
           About
         </Link>
         {showMySpace && (
-          <Link href="/dashboard" className={styles.link} style={{ visibility: user ? "visible" : "hidden" }}>
+          <Link
+            href="/dashboard"
+            className={pathname.startsWith("/dashboard") ? `${styles.mySpace} ${styles.mySpaceActive}` : styles.mySpace}
+            style={{ visibility: user ? "visible" : "hidden" }}
+          >
             <MySpaceLabel />
           </Link>
         )}
@@ -139,7 +145,15 @@ export default function Navbar() {
                     <ul id={id} className={styles.mobileToolList}>
                       {tools.map((tool) => (
                         <li key={tool.id}>
-                          {needsLogin(tool) && !user ? (
+                          {toolLock(tool, !!user, plan) === "pro" ? (
+                            <Link href="/pricing" className={`${styles.mobileTool} ${styles.megaItemPro}`}>
+                              <span>
+                                {tool.name}
+                                <ProTag />
+                              </span>
+                              <span className={styles.upgradeHint}>🔒 {PRO_TIP}</span>
+                            </Link>
+                          ) : needsLogin(tool) && !user ? (
                             // Phones have no hover, so the reason is written next to the locked tool
                             <span className={`${styles.mobileTool} ${styles.mobileLinkLocked}`} aria-disabled="true">
                               <span>
@@ -208,15 +222,14 @@ export default function Navbar() {
   );
 }
 
-/** "My Space" with a small raised red asterisk, the logged-in user's way into their files. */
+/** "My Space" with a folder icon: the logged-in user's way into their files. */
 function MySpaceLabel() {
   return (
-    // One span, so menu rows that spread their contents apart keep the asterisk beside the text
-    <span>
+    <span className={styles.mySpaceLabel}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      </svg>
       My Space
-      <span className={styles.mySpaceMark} aria-hidden>
-        *
-      </span>
     </span>
   );
 }
