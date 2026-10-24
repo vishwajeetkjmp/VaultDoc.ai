@@ -17,6 +17,7 @@
     "emulators:seed": "node scripts/emulator/seed.mjs",
     "test:ai": "node scripts/emulator/test-ai.mjs",
     "test:pro": "node scripts/emulator/test-pro.mjs",
+    "test:payments": "node scripts/emulator/test-payments.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,storage",
     "deploy:functions": "firebase deploy --only functions",
     "dev:admin": "npm --workspace @vaultdocai/admin run dev",

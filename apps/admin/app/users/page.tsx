@@ -19,6 +19,7 @@ type Detail = {
   aiEnabled: boolean;
   aiUsedToday: number;
   aiUsage: { today: AiCost; month: AiCost; total: AiCost };
+  payments: { orderId: string; amount: number; method: string | null; paidAt: number | null; periodEnd: number | null }[];
   aiDailyLimit: number | null;
   defaultAiDailyLimit: number;
 };
@@ -301,7 +302,15 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
           </div>
           <dl className="dl">
             <dt>Plan</dt>
-            <dd>{planText(u)}</dd>
+            <dd>
+              {planText(u)}
+              {d.payments.length > 0 && (
+                <div className="muted small">
+                  Paid {d.payments.length}× · ₹{num(d.payments.reduce((n, p) => n + p.amount, 0) / 100)} in total · last {date(d.payments[0].paidAt)}
+                  {d.payments[0].method ? ` (${d.payments[0].method.toUpperCase()})` : ""}
+                </div>
+              )}
+            </dd>
             <dt>Login</dt>
             <dd>{provider(u.providers)}</dd>
             <dt>Joined</dt>

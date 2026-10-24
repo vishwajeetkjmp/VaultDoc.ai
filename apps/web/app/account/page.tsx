@@ -56,7 +56,7 @@ function Account() {
         <section className={styles.section}>
           <h2 className={styles.h2}>Plan</h2>
           <div className={styles.card}>
-            <PlanSummary uid={user.uid} />
+            <PlanSummary user={user} />
           </div>
         </section>
       )}

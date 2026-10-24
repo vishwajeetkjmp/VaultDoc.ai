@@ -7,6 +7,7 @@ import { defineString } from "firebase-functions/params";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 import { wipeAccount } from "./accounts";
 import { aiLimits, aiUserUsage } from "./ai";
+import { paymentsOf } from "./payments";
 import { PLAN_LIMITS, planOf, setPlan } from "./plans";
 import { convertUsage, converterHealth, RATE_LIMIT_PER_HOUR, resetConvertLimit } from "./convert";
 import { APP_URL, RESEND_API_KEY, sendMail } from "./email";
@@ -177,7 +178,7 @@ const actions: Record<string, Handler> = {
     if (typeof data.uid !== "string") throw new HttpsError("invalid-argument", "Which user?");
     const user = await getAuth().getUser(data.uid).catch(() => null);
     if (!user) throw new HttpsError("not-found", "That user doesn't exist.");
-    const [[row], shares, vault, conversions, limits, ai, ailimits, usage] = await Promise.all([
+    const [[row], shares, vault, conversions, limits, ai, ailimits, usage, payments] = await Promise.all([
       userRows([user]),
       db().collection("shares").where("ownerUid", "==", user.uid).count().get(),
       db().doc(`users/${user.uid}/vault/meta`).get(),
@@ -186,6 +187,7 @@ const actions: Record<string, Handler> = {
       aiUserUsage(user.uid),
       aiLimits(),
       db().doc(`users/${user.uid}`).get(),
+      paymentsOf(user.uid),
     ]);
     return {
       user: row,
@@ -197,6 +199,7 @@ const actions: Record<string, Handler> = {
       aiEnabled: usage.get("aiEnabled") === true,
       aiUsedToday: ai.today.questions,
       aiUsage: ai,
+      payments,
       aiDailyLimit: Number.isFinite(Number(usage.get("aiDailyLimit"))) && usage.get("aiDailyLimit") !== undefined ? Number(usage.get("aiDailyLimit")) : null,
       // The daily AI questions this person gets without a personal limit: their plan's
       defaultAiDailyLimit: planOf(usage) === "pro" ? PLAN_LIMITS.pro.aiDaily : ailimits.defaultDaily,

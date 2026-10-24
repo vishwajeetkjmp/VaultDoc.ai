@@ -9,6 +9,8 @@ export default function SiteFooter() {
       <Link href="/pricing">Pricing</Link>
       <Link href="/privacy">Privacy</Link>
       <Link href="/terms">Terms</Link>
+      <Link href="/refunds">Refunds</Link>
+      <Link href="/contact">Contact</Link>
     </footer>
   );
 }

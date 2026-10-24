@@ -8,6 +8,9 @@
  *                         price, a Monthly / Yearly switch appears for that tab
  * (Amounts are in rupees. yearly is the total charged per year.)
  */
+/** Pro: a one-time payment for 30 days (keep in sync with PRO_PRICE in functions/src/plans.ts). */
+export const PRO_PRICE_RUPEES = 399;
+
 export type PlanIcon = "seed" | "sprout" | "family" | "team" | "building";
 
 export type Plan = {
@@ -19,7 +22,8 @@ export type Plan = {
   price: { monthly: number; yearly?: number } | null;
   /** Shown under ₹0 or instead of the billing note */
   priceNote?: string;
-  cta: { label: string; href?: string };
+  /** checkout: the button buys this plan (Razorpay) for logged-in people */
+  cta: { label: string; href?: string; checkout?: boolean };
   /** Heading above the feature list, e.g. "Everything in Free, plus:" */
   featuresTitle?: string;
   features: string[];
@@ -57,8 +61,9 @@ export const PLAN_TABS: PlanTab[] = [
         badge: "AI included",
         tagline: "For everyday paperwork",
         icon: "sprout",
-        price: null, // set e.g. { monthly: 199, yearly: 1990 } when ready
-        cta: { label: "Coming soon" },
+        price: { monthly: PRO_PRICE_RUPEES },
+        priceNote: "One-time payment for 30 days. No auto-renewal; pay again whenever you like.",
+        cta: { label: "Log in to upgrade", href: "/login?next=/pricing", checkout: true },
         featuresTitle: "Everything in Free, plus:",
         features: [
           "Ask AI across up to 20 files at once",
