@@ -483,6 +483,9 @@
   .menuButton {
     display: grid;
   }
+  .hiddenWhileMenu {
+    display: none;
+  }
 }
 @media (max-width: 380px) {
   .brand {

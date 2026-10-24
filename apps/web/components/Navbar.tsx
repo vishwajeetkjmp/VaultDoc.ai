@@ -75,8 +75,9 @@ export default function Navbar() {
         </div>
         {/* Until Firebase reports whether someone is logged in, keep the space empty so nothing flashes or jumps */}
         {loading && <span className={wasLoggedIn ? styles.avatarPlaceholder : styles.authPlaceholder} aria-hidden />}
+        {/* With the phone menu open, Login and Sign Up sit at the bottom of the menu instead */}
         {!loading && !user && (
-          <span className={styles.authArea}>
+          <span className={menuOpen ? `${styles.authArea} ${styles.hiddenWhileMenu}` : styles.authArea}>
             <Link href={withNext("/login", pathname)} className={styles.signIn}>
               Login
             </Link>
