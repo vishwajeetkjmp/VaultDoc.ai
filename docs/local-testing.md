@@ -44,9 +44,17 @@ AI runs in test mode on the emulators (`AI_FAKE=true` in `functions/.env.demo-va
 3. **Ask** tab → type a question → a streamed test answer; the counter shows "N of 10 left today".
 4. In the admin panel, **AI** now lists `rohan` with his cost; **Users → rohan** shows today / this month / total.
 
+**Pro plan (website + admin)**
+1. Admin → **Users** → `rohan` → **Change plan** → Pro (optional end date) → a reason → Save. The list shows a Pro badge.
+2. Website as `rohan`: storage shows 10 GB and 50 MB per file; **Account → Plan** says Pro.
+3. In My Space, select several files: ⌘/Ctrl-click or Shift-click (on a phone, long-press a file, then tap others). The bar at the bottom shows **N selected · ✨ Ask AI · Clear**.
+4. **Ask AI** → the panel lists the files → **Summarise these files** gives an overview and a card per file; **Remind me** on any date sets a reminder for that file. The **Ask** tab answers across all of them.
+5. As a Free user (e.g. `arjun`), selecting two files and clicking **Ask AI · Pro** explains Pro instead.
+
 ## Automated checks
 ```bash
 npm run test:ai   # AI limits, cap for everyone, cost tracking, admin AI page and permissions
+npm run test:pro  # Pro: granting it, AI across several files, combined summary, limits, expiry, 50 MB uploads
 ```
 Needs the emulators running and seeded. It uses its own accounts (`aitest1/2/3@example.com`), refuses to run unless AI test mode is on, and puts the AI limits back as they were.
 

@@ -9,9 +9,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Hard ceiling per file (20 MB). config/limits can only lower it.
+    // Hard ceiling per file: 20 MB, or 50 MB on Pro (the `plan` login claim, set only by
+    // Cloud Functions). config/limits can only lower the Free limit.
     function maxFileBytes() {
-      return 20 * 1024 * 1024;
+      return request.auth != null && request.auth.token.get('plan', '') == 'pro'
+        ? 50 * 1024 * 1024
+        : 20 * 1024 * 1024;
     }
 
     // Signed in as this user, with a verified email (Google accounts arrive verified)

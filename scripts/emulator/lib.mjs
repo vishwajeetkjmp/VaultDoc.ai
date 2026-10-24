@@ -104,3 +104,37 @@ export async function call(name, data, u) {
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /** India date (yyyy-mm-dd), like the functions use for "today". */
 export const istDay = () => new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10);
+
+/** An account's custom login claims (admin role, Pro plan). */
+export async function claimsOf(uid) {
+  const r = await post(`${AUTH}/identitytoolkit.googleapis.com/v1/projects/${PROJECT}/accounts:lookup`, { localId: [uid] }, { Authorization: "Bearer owner" });
+  return JSON.parse(r.users?.[0]?.customAttributes ?? "{}");
+}
+
+/** Uploads raw bytes as this user and reports the Storage rules' answer (true = allowed). */
+export async function tryUpload(u, id, name, body, type = "application/pdf") {
+  const fields = { kind: "file", name, nameLower: name.toLowerCase(), parentId: "root", ancestorIds: [], status: "uploading", size: body.length, storagePath: `users/${u.uid}/files/${id}`, contentType: type };
+  await fetch(`${FS}/users/${u.uid}/items?documentId=${id}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${u.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, toValue(v)])) }),
+  });
+  const up = await fetch(`${ST}?name=${encodeURIComponent(`users/${u.uid}/files/${id}`)}`, { method: "POST", headers: { Authorization: `Firebase ${u.token}`, "Content-Type": type }, body });
+  return up.ok;
+}
+
+/** All documents directly in a collection path, e.g. users/<uid>/aiInsights. */
+export async function listDocs(path) {
+  const r = await fetch(`${FS}/${path}?pageSize=300`, { headers: { Authorization: "Bearer owner" } }).then(json);
+  return (r.documents ?? []).map((d) => ({ id: d.name.split("/").pop(), data: fromFields(d.fields ?? {}) }));
+}
+
+/** Waits (up to `ms`) until `test` returns something truthy, and returns it. */
+export async function waitFor(test, ms = 15_000) {
+  const end = Date.now() + ms;
+  for (;;) {
+    const v = await test();
+    if (v || Date.now() > end) return v;
+    await sleep(300);
+  }
+}

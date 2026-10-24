@@ -37,27 +37,62 @@ type Props = {
   sharedIds?: Set<string>;
   onShare?: (item: Item) => void;
   onAskAi?: (item: Item) => void;
-  /** The selected row changed (or was cleared) */
-  onSelectionChange?: (item: Item | null) => void;
+  /** The selected rows changed (empty when cleared), in list order */
+  onSelectionChange?: (items: Item[]) => void;
+  /**
+   * Let people select several rows: Ctrl/Cmd-click and Shift-click, or long-press on a phone (then taps
+   * add and remove, with checkboxes). The bar shown while several are selected comes from the caller.
+   */
+  multiSelect?: { bar: (selected: Item[], clear: () => void) => React.ReactNode };
   emptyState: React.ReactNode;
 };
 
-export default function FileList({ items, pendingIds, loading, searching, onOpen, onMenu, onDelete, onRename, sharedIds, onShare, onAskAi, onSelectionChange, emptyState }: Props) {
+type Selection = { ids: Set<string>; primary: string | null; anchor: string | null };
+const NONE: Selection = { ids: new Set(), primary: null, anchor: null };
+export type SelectHow = { toggle?: boolean; range?: boolean };
+const LONG_PRESS_MS = 500;
+
+export default function FileList({
+  items,
+  pendingIds,
+  loading,
+  searching,
+  onOpen,
+  onMenu,
+  onDelete,
+  onRename,
+  sharedIds,
+  onShare,
+  onAskAi,
+  onSelectionChange,
+  multiSelect,
+  emptyState,
+}: Props) {
   const [sort, setSort] = useState<Sort>({ key: "name", dir: 1 });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<Selection>(NONE);
+  // Long-pressed on a phone: taps now add and remove rows instead of opening them
+  const [touchSelecting, setTouchSelecting] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
 
   const sorted = useMemo(() => sortItems(items, sort), [items, sort]);
-  const selected = sorted.find((i) => i.id === selectedId) ?? null;
+  const selected = sorted.find((i) => i.id === selection.primary) ?? null;
+  const selectedItems = useMemo(() => sorted.filter((i) => selection.ids.has(i.id)), [sorted, selection.ids]);
+  const setSelectedId = useCallback((id: string | null) => setSelection(id ? { ids: new Set([id]), primary: id, anchor: id } : NONE), []);
 
   // Keep the selection valid when the folder changes
   useEffect(() => {
-    if (selectedId && !items.some((i) => i.id === selectedId)) setSelectedId(null);
-  }, [items, selectedId]);
+    if ([...selection.ids].some((id) => !items.some((i) => i.id === id))) {
+      setSelection((s) => {
+        const ids = new Set([...s.ids].filter((id) => items.some((i) => i.id === id)));
+        return { ids, primary: s.primary && ids.has(s.primary) ? s.primary : ([...ids][0] ?? null), anchor: s.anchor && ids.has(s.anchor) ? s.anchor : null };
+      });
+    }
+  }, [items, selection.ids]);
 
   useEffect(() => {
-    onSelectionChange?.(selected);
-  }, [selected, onSelectionChange]);
+    onSelectionChange?.(selectedItems);
+    if (!selectedItems.length) setTouchSelecting(false);
+  }, [selectedItems, onSelectionChange]);
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: key === "name" ? 1 : -1 }));
@@ -83,9 +118,35 @@ export default function FileList({ items, pendingIds, loading, searching, onOpen
     e.preventDefault();
   };
 
-  const handleSelect = useCallback((id: string) => setSelectedId(id), []);
+  const handleSelect = useCallback(
+    (id: string, how: SelectHow = {}) =>
+      setSelection((s) => {
+        if (!multiSelect || (!how.toggle && !how.range)) return { ids: new Set([id]), primary: id, anchor: id };
+        if (how.range && s.anchor) {
+          const a = sorted.findIndex((i) => i.id === s.anchor);
+          const b = sorted.findIndex((i) => i.id === id);
+          if (a >= 0 && b >= 0) return { ids: new Set(sorted.slice(Math.min(a, b), Math.max(a, b) + 1).map((i) => i.id)), primary: id, anchor: s.anchor };
+        }
+        const ids = new Set(s.ids);
+        if (ids.has(id)) ids.delete(id);
+        else ids.add(id);
+        return { ids, primary: ids.has(id) ? id : ([...ids][0] ?? null), anchor: id };
+      }),
+    [multiSelect, sorted],
+  );
+  const startTouchSelect = useCallback(
+    (id: string) => {
+      if (!multiSelect) return;
+      setTouchSelecting(true);
+      handleSelect(id, { toggle: true });
+    },
+    [multiSelect, handleSelect],
+  );
+  const showChecks = !!multiSelect && (touchSelecting || selection.ids.size > 1);
 
   return (
+    <>
+    {multiSelect && selectedItems.length > 1 && multiSelect.bar(selectedItems, () => setSelectedId(null))}
     <div
       ref={wrap}
       className={styles.listWrap}
@@ -125,15 +186,19 @@ export default function FileList({ items, pendingIds, loading, searching, onOpen
             key={item.id}
             item={item}
             pending={item.status !== "ready" && pendingIds.has(item.id)}
-            selected={item.id === selectedId}
+            selected={selection.ids.has(item.id)}
+            checks={showChecks}
+            touchSelecting={touchSelecting}
             shared={!!sharedIds?.has(item.id)}
             onSelect={handleSelect}
+            onLongPress={startTouchSelect}
             onOpen={onOpen}
             onMenu={onMenu}
           />
         ))
       )}
     </div>
+    </>
   );
 }
 
@@ -156,36 +221,74 @@ const Row = memo(function Row({
   item,
   pending,
   selected,
+  checks,
+  touchSelecting,
   shared,
   onSelect,
+  onLongPress,
   onOpen,
   onMenu,
 }: {
   item: Item;
   pending: boolean;
   selected: boolean;
+  checks: boolean;
+  touchSelecting: boolean;
   shared: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, how?: SelectHow) => void;
+  onLongPress: (id: string) => void;
   onOpen: (item: Item) => void;
   onMenu: (item: Item, x: number, y: number) => void;
 }) {
   const folder = item.kind === "folder";
   const date = item.updatedAt ?? item.createdAt;
+  const press = useRef<{ timer: number; fired: boolean } | null>(null);
+  const cancelPress = () => {
+    if (press.current) window.clearTimeout(press.current.timer);
+  };
   return (
     <div
       data-id={item.id}
       role="row"
       aria-selected={selected}
       className={`${styles.row} ${selected ? styles.rowSelected : ""} ${pending ? styles.rowPending : ""}`}
-      onMouseDown={() => onSelect(item.id)}
-      onDoubleClick={() => !pending && onOpen(item)}
+      onMouseDown={(e) => {
+        if (touchSelecting) return; // taps toggle (below)
+        onSelect(item.id, { toggle: e.metaKey || e.ctrlKey, range: e.shiftKey });
+      }}
+      onClick={() => {
+        if (press.current?.fired) press.current = null; // the long-press already selected it
+        else if (touchSelecting) onSelect(item.id, { toggle: true });
+      }}
+      onDoubleClick={() => !pending && !touchSelecting && onOpen(item)}
+      onTouchStart={() => {
+        cancelPress();
+        press.current = { fired: false, timer: window.setTimeout(() => {
+          if (press.current) press.current.fired = true;
+          onLongPress(item.id);
+        }, LONG_PRESS_MS) };
+      }}
+      onTouchMove={cancelPress}
+      onTouchEnd={cancelPress}
       onContextMenu={(e) => {
         e.preventDefault();
-        onSelect(item.id);
+        if (press.current?.fired) return; // a phone's long-press selects instead of opening the menu
+        if (!selected) onSelect(item.id);
         onMenu(item, e.clientX, e.clientY);
       }}
     >
       <div className={styles.nameCell}>
+        {checks && (
+          <input
+            type="checkbox"
+            className={styles.rowCheck}
+            checked={selected}
+            aria-label={`Select ${item.name}`}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onChange={() => onSelect(item.id, { toggle: true })}
+          />
+        )}
         <FileIcon name={item.name} folder={folder} />
         <span className={styles.nameText} title={item.name}>
           {item.name}

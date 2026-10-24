@@ -40,6 +40,8 @@ export type UserRow = {
   usedBytes: number;
   fileCount: number;
   quotaBytes: number | null;
+  plan: "free" | "pro";
+  planUntil: number | null;
 };
 export type CurrentStats = {
   users: number;
@@ -52,6 +54,7 @@ export type CurrentStats = {
   storageBytes: number;
   files: number;
   sharesActive: number;
+  proUsers?: number;
   at: number;
 };
 export type DayStats = {
@@ -75,8 +78,9 @@ export type DayStats = {
 export type AiCost = { questions: number; costMicroUsd: number };
 export type AiOverview = {
   limits: { defaultDaily: number; globalDaily: number | null };
+  proDaily: number;
   month: string;
   today: AiCost;
   thisMonth: AiCost & { users: number };
-  topUsers: { uid: string; email: string; questions: number; inputTokens: number; outputTokens: number; costMicroUsd: number }[];
+  topUsers: { uid: string; email: string; plan: "free" | "pro"; questions: number; inputTokens: number; outputTokens: number; costMicroUsd: number }[];
 };

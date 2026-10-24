@@ -366,6 +366,10 @@ textarea.input {
   background: var(--primary-soft);
   color: var(--primary);
 }
+.badge.pro {
+  background: linear-gradient(135deg, #7c5cff, #2f80ed);
+  color: #fff;
+}
 
 /* ---------- Tables ---------- */
 .tableWrap {

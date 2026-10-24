@@ -86,6 +86,7 @@ export default function AiPage() {
                         ) : (
                           <div className="ellipsis">{u.email}</div>
                         )}
+                        {u.plan === "pro" && <span className="badge pro">Pro</span>}
                       </td>
                       <td className="num">{num(u.questions)}</td>
                       <td className="num">{inr(u.costMicroUsd)}</td>
@@ -117,7 +118,10 @@ export default function AiPage() {
           ) : (
             <dl className="dl">
               <dt>Per user</dt>
-              <dd>{d.limits.defaultDaily === 0 ? "No AI (0 a day)" : `${num(d.limits.defaultDaily)} questions a day each`}</dd>
+              <dd>
+                {d.limits.defaultDaily === 0 ? "No AI on Free (0 a day)" : `${num(d.limits.defaultDaily)} questions a day each on Free`}
+                <div className="muted small">Pro: {num(d.proDaily)} a day, up to 20 files per question</div>
+              </dd>
               <dt>Everyone together</dt>
               <dd>
                 {d.limits.globalDaily === null ? "No cap" : paused ? <span className="badge warn">AI paused for everyone</span> : `${num(d.limits.globalDaily)} questions a day`}
@@ -141,7 +145,7 @@ export default function AiPage() {
             <div style={{ display: "grid", gap: 12 }}>
               <label style={{ display: "grid", gap: 6 }}>
                 <span className="small" style={{ fontWeight: 600 }}>
-                  Questions per user per day <span className="muted">(0 = no AI)</span>
+                  Questions per Free user per day <span className="muted">(0 = no AI; Pro stays {num(d.proDaily)})</span>
                 </span>
                 <input className="input" type="number" min={0} max={500} step={1} value={perUser} onChange={(e) => setPerUser(e.target.value)} />
               </label>

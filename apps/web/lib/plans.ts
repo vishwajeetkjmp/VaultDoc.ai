@@ -61,8 +61,9 @@ export const PLAN_TABS: PlanTab[] = [
         cta: { label: "Coming soon" },
         featuresTitle: "Everything in Free, plus:",
         features: [
-          "Ask questions about your documents with AI",
-          "More storage and bigger files",
+          "Ask AI across up to 20 files at once",
+          "50 AI questions a day",
+          "10 GB storage, files up to 50 MB",
           "Reminders before documents expire",
           "Priority support",
         ],

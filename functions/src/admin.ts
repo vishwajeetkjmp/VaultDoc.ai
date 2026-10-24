@@ -7,6 +7,7 @@ import { defineString } from "firebase-functions/params";
 import { CallableRequest, HttpsError, onCall } from "firebase-functions/v2/https";
 import { wipeAccount } from "./accounts";
 import { aiLimits, aiUserUsage } from "./ai";
+import { PLAN_LIMITS, planOf, setPlan } from "./plans";
 import { convertUsage, converterHealth, RATE_LIMIT_PER_HOUR, resetConvertLimit } from "./convert";
 import { APP_URL, RESEND_API_KEY, sendMail } from "./email";
 import { deleteSharesOfUser } from "./shares";
@@ -95,6 +96,8 @@ async function userRows(records: UserRecord[]) {
     usedBytes: Number(usage[i].get("usedBytes")) || 0,
     fileCount: Number(usage[i].get("fileCount")) || 0,
     quotaBytes: Number(usage[i].get("quotaBytes")) || null,
+    plan: planOf(usage[i]),
+    planUntil: ms(usage[i].get("planUntil")),
   }));
 }
 
@@ -135,7 +138,8 @@ const actions: Record<string, Handler> = {
       if (!owners.empty) throw new HttpsError("already-exists", "There is already an owner.");
       tx.set(ref, { email: c.email, role: "owner", addedBy: "setup", at: FieldValue.serverTimestamp() });
     });
-    await getAuth().setCustomUserClaims(c.uid, { role: "owner" });
+    const account = await getAuth().getUser(c.uid);
+    await getAuth().setCustomUserClaims(c.uid, { ...(account.customClaims ?? {}), role: "owner" }); // keeps a Pro plan claim
     await audit({ uid: c.uid, email: c.email, role: "owner" }, "claimOwner", "First owner set up", { uid: c.uid, email: c.email });
     return { role: "owner" };
   },
@@ -185,12 +189,13 @@ const actions: Record<string, Handler> = {
       vaultSetUp: vault.exists,
       conversionsThisHour: conversions,
       conversionLimit: RATE_LIMIT_PER_HOUR,
-      defaultQuotaBytes: Number(limits.get("quotaBytes")) || 1024 ** 3,
+      defaultQuotaBytes: planOf(usage) === "pro" ? PLAN_LIMITS.pro.quotaBytes : Number(limits.get("quotaBytes")) || 1024 ** 3,
       aiEnabled: usage.get("aiEnabled") === true,
       aiUsedToday: ai.today.questions,
       aiUsage: ai,
       aiDailyLimit: Number.isFinite(Number(usage.get("aiDailyLimit"))) && usage.get("aiDailyLimit") !== undefined ? Number(usage.get("aiDailyLimit")) : null,
-      defaultAiDailyLimit: ailimits.defaultDaily,
+      // The daily AI questions this person gets without a personal limit: their plan's
+      defaultAiDailyLimit: planOf(usage) === "pro" ? PLAN_LIMITS.pro.aiDaily : ailimits.defaultDaily,
     };
   },
 
@@ -238,6 +243,17 @@ const actions: Record<string, Handler> = {
         details = { aiDailyLimit: n };
         break;
       }
+      case "setPlan": {
+        const plan = data.plan === "pro" ? "pro" : data.plan === "free" ? "free" : null;
+        if (!plan) throw new HttpsError("invalid-argument", "Plan must be Free or Pro.");
+        const until = plan === "pro" && data.until !== null && data.until !== undefined ? Number(data.until) : null;
+        if (until !== null && (!Number.isFinite(until) || until <= Date.now() || until > Date.now() + 5 * 365 * 86_400_000)) {
+          throw new HttpsError("invalid-argument", "The end date must be in the future (within 5 years), or empty for no end date.");
+        }
+        await setPlan(user.uid, plan, until, actor.email);
+        details = { plan, until };
+        break;
+      }
       case "resetToolLimit":
         await resetConvertLimit(user.uid);
         break;
@@ -268,16 +284,21 @@ const actions: Record<string, Handler> = {
     const questions = (d: FirebaseFirestore.DocumentSnapshot) => (Number(d.get("aiQuestions")) || 0) + (Number(d.get("aiAnalyses")) || 0);
     const today = days.docs.find((d) => d.id === istDay());
     const uids = top.docs.map((d) => d.get("uid") as string);
-    const accounts = uids.length ? (await getAuth().getUsers(uids.map((uid) => ({ uid })))).users : [];
+    const [accounts, userDocs] = uids.length
+      ? await Promise.all([getAuth().getUsers(uids.map((uid) => ({ uid }))).then((r) => r.users), db().getAll(...uids.map((uid) => db().doc(`users/${uid}`)))])
+      : [[], []];
     const emailOf = new Map(accounts.map((u) => [u.uid, u.email ?? u.uid]));
+    const planOfUid = new Map(userDocs.map((d) => [d.id, planOf(d)]));
     return {
       limits,
+      proDaily: PLAN_LIMITS.pro.aiDaily,
       month,
       today: { questions: today ? questions(today) : 0, costMicroUsd: Number(today?.get("aiCostMicroUsd")) || 0 },
       thisMonth: { questions: sum(questions), costMicroUsd: sum((d) => Number(d.get("aiCostMicroUsd")) || 0), users: top.size },
       topUsers: top.docs.map((d) => ({
         uid: d.get("uid"),
         email: emailOf.get(d.get("uid")) ?? "deleted account",
+        plan: planOfUid.get(d.get("uid")) ?? "free",
         questions: d.get("questions") ?? 0,
         inputTokens: d.get("inputTokens") ?? 0,
         outputTokens: d.get("outputTokens") ?? 0,

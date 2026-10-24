@@ -22,7 +22,10 @@ type Detail = {
   aiDailyLimit: number | null;
   defaultAiDailyLimit: number;
 };
-type Op = "disable" | "enable" | "resendVerification" | "setQuota" | "setAiLimit" | "resetToolLimit" | "stopShares" | "delete";
+type Op = "disable" | "enable" | "resendVerification" | "setPlan" | "setQuota" | "setAiLimit" | "resetToolLimit" | "stopShares" | "delete";
+const planText = (u: UserRow) => (u.plan === "pro" ? `Pro${u.planUntil ? ` until ${date(u.planUntil)}` : " (no end date)"}` : "Free");
+/** End of the chosen day, India time (the plan lasts through that whole day) */
+const endOfDay = (yyyyMmDd: string) => Date.parse(`${yyyyMmDd}T23:59:59+05:30`);
 
 const provider = (p: string[]) => (p.includes("google.com") ? "Google" : p.includes("password") ? "Email" : p[0] ?? "—");
 
@@ -158,6 +161,7 @@ function Users() {
                     <div className="row" style={{ gap: 4 }}>
                       {u.disabled ? <span className="badge bad">Disabled</span> : u.verified ? <span className="badge good">Active</span> : <span className="badge warn">Not verified</span>}
                       {u.role && <span className="badge info">{u.role}</span>}
+                      {u.plan === "pro" && <span className="badge pro">Pro</span>}
                     </div>
                   </td>
                   <td className="hideSm muted">{date(u.createdAt)}</td>
@@ -199,6 +203,8 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
   const [op, setOp] = useState<Op | null>(null);
   const [quotaGb, setQuotaGb] = useState("");
   const [aiLimit, setAiLimit] = useState("");
+  const [plan, setPlan] = useState<"free" | "pro">("pro");
+  const [planUntil, setPlanUntil] = useState("");
   // The parent recreates these on every render; refs keep the reload below from re-running because of that
   const callbacks = useRef({ onChanged, onClose });
   callbacks.current = { onChanged, onClose };
@@ -223,11 +229,13 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
       reason,
       ...(op === "setQuota" ? { quotaGb: quotaGb === "" ? null : Number(quotaGb) } : {}),
       ...(op === "setAiLimit" ? { aiDailyLimit: aiLimit === "" ? null : Number(aiLimit) } : {}),
+      ...(op === "setPlan" ? { plan, until: plan === "pro" && planUntil ? endOfDay(planUntil) : null } : {}),
     });
     const done: Record<Op, string> = {
       disable: "Account disabled and signed out everywhere",
       enable: "Account enabled",
       resendVerification: "Verification email sent",
+      setPlan: "Plan updated. It applies the next time they open the app",
       setQuota: "Storage quota updated",
       setAiLimit: "AI daily limit updated",
       resetToolLimit: "Conversion limit reset",
@@ -248,6 +256,14 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
   const actions: { op: Op; title: string; text: string; label: string; danger?: boolean; min: "support" | "owner"; show: boolean }[] = u
     ? [
         { op: "resendVerification", title: "Resend verification email", text: "Sends a new verification link to their inbox.", label: "Send", min: "support", show: !u.verified && !u.disabled },
+        {
+          op: "setPlan",
+          title: "Change plan",
+          text: `${planText(u)}. Pro: AI across up to 20 files, 50 AI questions a day, 10 GB, files up to 50 MB.`,
+          label: "Change plan",
+          min: "support",
+          show: true,
+        },
         { op: "setQuota", title: "Change storage quota", text: `Currently ${bytes(quota)}${u.quotaBytes ? " (custom)" : " (default)"}.`, label: "Save quota", min: "support", show: true },
         {
           op: "setAiLimit",
@@ -280,9 +296,12 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
           <div className="row">
             {u.disabled ? <span className="badge bad">Disabled</span> : u.verified ? <span className="badge good">Active</span> : <span className="badge warn">Not verified</span>}
             {u.role && <span className="badge info">Admin: {u.role}</span>}
+            {u.plan === "pro" && <span className="badge pro">Pro</span>}
             {d.vaultSetUp && <span className="badge">Secure Vault set up</span>}
           </div>
           <dl className="dl">
+            <dt>Plan</dt>
+            <dd>{planText(u)}</dd>
             <dt>Login</dt>
             <dd>{provider(u.providers)}</dd>
             <dt>Joined</dt>
@@ -338,6 +357,8 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
                         onClick={() => {
                           setQuotaGb(u.quotaBytes ? String(Math.round((u.quotaBytes / 1024 ** 3) * 10) / 10) : "");
                           setAiLimit(d.aiDailyLimit !== null ? String(d.aiDailyLimit) : "");
+                          setPlan(u.plan === "pro" ? "free" : "pro"); // the likely change
+                          setPlanUntil(u.planUntil ? new Date(u.planUntil + 5.5 * 3_600_000).toISOString().slice(0, 10) : "");
                           setOp(a.op);
                         }}
                       >
@@ -361,7 +382,8 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
           danger={current.danger}
           ready={
             (op !== "setQuota" || quotaGb === "" || (Number(quotaGb) >= 0.1 && Number(quotaGb) <= 1000)) &&
-            (op !== "setAiLimit" || aiLimit === "" || (Number.isInteger(Number(aiLimit)) && Number(aiLimit) >= 0 && Number(aiLimit) <= 500))
+            (op !== "setAiLimit" || aiLimit === "" || (Number.isInteger(Number(aiLimit)) && Number(aiLimit) >= 0 && Number(aiLimit) <= 500)) &&
+            (op !== "setPlan" || plan === "free" || planUntil === "" || endOfDay(planUntil) > Date.now())
           }
           extra={
             op === "setQuota" ? (
@@ -371,6 +393,25 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
                 </span>
                 <input className="input" type="number" min={0.1} max={1000} step={0.1} value={quotaGb} onChange={(e) => setQuotaGb(e.target.value)} />
               </label>
+            ) : op === "setPlan" ? (
+              <div style={{ display: "grid", gap: 12 }}>
+                <div className="row" role="radiogroup" aria-label="Plan" style={{ gap: 16 }}>
+                  {(["free", "pro"] as const).map((p) => (
+                    <label key={p} className="row" style={{ gap: 6, cursor: "pointer" }}>
+                      <input type="radio" name="plan" checked={plan === p} onChange={() => setPlan(p)} />
+                      {p === "pro" ? "Pro" : "Free"}
+                    </label>
+                  ))}
+                </div>
+                {plan === "pro" && (
+                  <label style={{ display: "grid", gap: 6 }}>
+                    <span className="small" style={{ fontWeight: 600 }}>
+                      Pro until <span className="muted">(empty = no end date; it ends after this day, India time)</span>
+                    </span>
+                    <input className="input" type="date" value={planUntil} min={new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10)} onChange={(e) => setPlanUntil(e.target.value)} />
+                  </label>
+                )}
+              </div>
             ) : op === "setAiLimit" ? (
               <label style={{ display: "grid", gap: 6 }}>
                 <span className="small" style={{ fontWeight: 600 }}>

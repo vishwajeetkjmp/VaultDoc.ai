@@ -32,6 +32,7 @@ export type CurrentStats = {
   storageBytes: number;
   files: number;
   sharesActive: number;
+  proUsers: number;
   at: number;
 };
 
@@ -70,11 +71,12 @@ export async function computeStats(): Promise<CurrentStats> {
   } while (pageToken);
 
   // One field per aggregation: summing two fields in one query would need a composite index
-  const [bytesAgg, filesAgg, noExpiry, notExpired] = await Promise.all([
+  const [bytesAgg, filesAgg, noExpiry, notExpired, pro] = await Promise.all([
     db.collection("users").aggregate({ bytes: AggregateField.sum("usedBytes") }).get(),
     db.collection("users").aggregate({ files: AggregateField.sum("fileCount") }).get(),
     db.collection("shares").where("expiresAt", "==", null).count().get(),
     db.collection("shares").where("expiresAt", ">", Timestamp.fromMillis(now)).count().get(),
+    db.collection("users").where("plan", "==", "pro").count().get(),
   ]);
 
   const stats: CurrentStats = {
@@ -88,6 +90,7 @@ export async function computeStats(): Promise<CurrentStats> {
     storageBytes: Number(bytesAgg.data().bytes) || 0,
     files: Number(filesAgg.data().files) || 0,
     sharesActive: noExpiry.data().count + notExpired.data().count,
+    proUsers: pro.data().count,
     at: now,
   };
 

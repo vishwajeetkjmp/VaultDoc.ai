@@ -69,7 +69,7 @@ type View = "files" | "shared" | "with-me" | "reminders";
 type DialogState =
   | { type: "newFolder" }
   | { type: "share"; item: Item }
-  | { type: "ai"; item: Item }
+  | { type: "ai"; items: Item[] }
   | { type: "rename"; item: Item }
   | { type: "delete"; item: Item }
   | null;
@@ -92,7 +92,7 @@ export default function FilesApp({ user }: { user: User }) {
   const [chain, setChain] = useState<Item[]>([]); // folders from the top down to the current one
   const [search, setSearch] = useState("");
   const [menu, setMenu] = useState<{ x: number; y: number; actions: MenuAction[] } | null>(null);
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -262,7 +262,7 @@ export default function FilesApp({ user }: { user: User }) {
       } else {
         actions.push({ label: "Download as ZIP", icon: <ZipIcon size={18} />, onSelect: () => downloadZip(item) });
       }
-      if (aiReadable(item)) actions.unshift({ label: "Ask AI", icon: <span aria-hidden style={{ width: 18, textAlign: "center" }}>✨</span>, onSelect: () => setDialog({ type: "ai", item }) });
+      if (aiReadable(item)) actions.unshift({ label: "Ask AI", icon: <span aria-hidden style={{ width: 18, textAlign: "center" }}>✨</span>, onSelect: () => setDialog({ type: "ai", items: [item] }) });
       actions.push(
         { label: sharedIds.has(item.id) ? "Sharing settings" : "Share", icon: <ShareIcon size={18} />, onSelect: () => setDialog({ type: "share", item }) },
         { label: "Rename", icon: <PencilIcon size={18} />, onSelect: () => setDialog({ type: "rename", item }) },
@@ -287,12 +287,21 @@ export default function FilesApp({ user }: { user: User }) {
     });
   };
 
+  /** Ask AI about the selected files: one for everyone, several together on Pro (the panel explains Pro otherwise). */
+  const askAiAbout = (chosen: Item[]) => {
+    const unreadable = chosen.find((i) => !aiReadable(i));
+    if (unreadable) return showToast(`AI can't read “${unreadable.name}”. Choose documents, photos or text files.`);
+    setDialog({ type: "ai", items: chosen });
+  };
+
   /**
-   * Toolbar "Ask AI": the selected document, or a pick list of this folder's documents.
-   * One file at a time; asking about several files together is planned for Premium (v2).
+   * Toolbar "Ask AI": the selected document(s), or a pick list of this folder's documents.
+   * Several files together is a Pro feature.
    */
   const askAi = (e: React.MouseEvent<HTMLElement>) => {
-    if (selectedItem && aiReadable(selectedItem)) return setDialog({ type: "ai", item: selectedItem });
+    if (selectedItems.length > 1) return askAiAbout(selectedItems);
+    const one = selectedItems[0];
+    if (one && aiReadable(one)) return setDialog({ type: "ai", items: [one] });
     const docs = visible.filter(aiReadable);
     const r = e.currentTarget.getBoundingClientRect();
     const file = <span aria-hidden style={{ width: 18, textAlign: "center" }}>📄</span>;
@@ -301,13 +310,16 @@ export default function FilesApp({ user }: { user: User }) {
       y: r.bottom + 6,
       actions: [
         ...(docs.length
-          ? docs.slice(0, 10).map((item): MenuAction => ({ label: item.name, icon: file, onSelect: () => setDialog({ type: "ai", item }) }))
+          ? docs.slice(0, 10).map((item): MenuAction => ({ label: item.name, icon: file, onSelect: () => setDialog({ type: "ai", items: [item] }) }))
           : [{ label: "Upload a document to ask about", icon: <UploadIcon size={18} />, onSelect: () => fileInput.current?.click() }]),
         "divider",
         {
-          label: "Several files together · Premium",
+          label: "Several files together · Pro",
           icon: <span aria-hidden style={{ width: 18, textAlign: "center" }}>👑</span>,
-          onSelect: () => showToast("Asking about several files together is coming soon with Premium."),
+          onSelect: () =>
+            account.plan === "pro"
+              ? showToast("Select files with Ctrl/⌘-click or Shift-click (long-press on a phone), then click Ask AI.")
+              : router.push("/pricing"),
         },
       ],
     });
@@ -434,7 +446,7 @@ export default function FilesApp({ user }: { user: User }) {
               <RemindersView
                 uid={uid}
                 onToast={showToast}
-                onOpenItem={(itemId) => getItem(uid, itemId).then((item) => (item ? setDialog({ type: "ai", item }) : showToast("This document no longer exists")))}
+                onOpenItem={(itemId) => getItem(uid, itemId).then((item) => (item ? setDialog({ type: "ai", items: [item] }) : showToast("This document no longer exists")))}
               />
             ) : view === "shared" ? (
               <SharedByMe
@@ -481,8 +493,14 @@ export default function FilesApp({ user }: { user: User }) {
               <button
                 className={styles.aiButton}
                 onClick={askAi}
-                aria-haspopup={selectedItem && aiReadable(selectedItem) ? undefined : "menu"}
-                title={selectedItem && aiReadable(selectedItem) ? `Ask AI about “${selectedItem.name}” (A)` : "Ask AI about a document in this folder"}
+                aria-haspopup={selectedItems.length > 1 || (selectedItems[0] && aiReadable(selectedItems[0])) ? undefined : "menu"}
+                title={
+                  selectedItems.length > 1
+                    ? `Ask AI about these ${selectedItems.length} files`
+                    : selectedItems[0] && aiReadable(selectedItems[0])
+                      ? `Ask AI about “${selectedItems[0].name}” (A)`
+                      : "Ask AI about a document in this folder"
+                }
               >
                 <span aria-hidden>✨</span> Ask AI
               </button>
@@ -500,8 +518,22 @@ export default function FilesApp({ user }: { user: User }) {
             pendingIds={pendingIds}
             sharedIds={sharedIds}
             onShare={(item) => setDialog({ type: "share", item })}
-            onAskAi={(item) => aiReadable(item) && setDialog({ type: "ai", item })}
-            onSelectionChange={setSelectedItem}
+            onAskAi={(item) => (selectedItems.length > 1 ? askAiAbout(selectedItems) : aiReadable(item) && setDialog({ type: "ai", items: [item] }))}
+            onSelectionChange={setSelectedItems}
+            multiSelect={{
+              bar: (chosen, clear) => (
+                <div className={styles.selectionBar} role="toolbar" aria-label="Selected files">
+                  <span>{chosen.length} selected</span>
+                  <span className={styles.spacer} />
+                  <button className={styles.aiButton} onClick={() => askAiAbout(chosen)}>
+                    <span aria-hidden>✨</span> Ask AI{account.plan === "pro" ? "" : " · Pro"}
+                  </button>
+                  <button className={styles.button} onClick={clear}>
+                    Clear
+                  </button>
+                </div>
+              ),
+            }}
             loading={loading}
             searching={!!search.trim()}
             onOpen={open}
@@ -543,7 +575,7 @@ export default function FilesApp({ user }: { user: User }) {
 
       {menu && <Menu {...menu} onClose={() => setMenu(null)} />}
 
-      {dialog?.type === "ai" && <AiPanel uid={uid} item={dialog.item} onClose={() => setDialog(null)} />}
+      {dialog?.type === "ai" && <AiPanel uid={uid} items={dialog.items} onClose={() => setDialog(null)} />}
       {dialog?.type === "share" && (
         <ShareDialog item={dialog.item} existing={myShares.find((s) => s.itemId === dialog.item.id)} onClose={() => setDialog(null)} onToast={showToast} />
       )}
