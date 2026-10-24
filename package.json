@@ -14,6 +14,8 @@
     "start": "npm --workspace @vaultdocai/web run start",
     "dev:emulators": "NEXT_PUBLIC_FIREBASE_EMULATORS=true npm --workspace @vaultdocai/web run dev",
     "emulators": "npm --prefix functions run build && firebase emulators:start --project demo-vaultdoc",
+    "emulators:seed": "node scripts/emulator/seed.mjs",
+    "test:ai": "node scripts/emulator/test-ai.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,storage",
     "deploy:functions": "firebase deploy --only functions",
     "dev:admin": "npm --workspace @vaultdocai/admin run dev",
