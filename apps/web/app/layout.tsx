@@ -20,7 +20,7 @@ const serif = Newsreader({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://vaultdocai.com"),
-  title: "VaultDocAI — Understand every document in seconds",
+  title: "VaultDocAI — A secure and intelligent space for your private documents",
   description:
     "Your private document space with AI. Upload contracts, reports and invoices, ask questions in plain language, get deadline reminders, and use free PDF tools.",
   keywords: ["document AI", "PDF tools", "ask questions about PDF", "Word to PDF", "merge PDF", "secure document storage", "India"],
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "VaultDocAI",
     url: "https://vaultdocai.com",
-    title: "VaultDocAI — Understand every document in seconds",
+    title: "VaultDocAI — A secure and intelligent space for your private documents",
     description: "Your private document space with AI: ask questions about your documents, get deadline reminders, free PDF tools.",
     images: [{ url: "/icons/icon-512.png", width: 512, height: 512, alt: "VaultDocAI" }],
     locale: "en_IN",

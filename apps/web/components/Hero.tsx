@@ -10,13 +10,13 @@ export default function Hero() {
     <>
       <section className={styles.hero}>
         <div className={styles.badgeRow}>
-          <span className={styles.badge}>🔒 Private to your account · AI-powered</span>
+          <span className={styles.badge}>🔒 Private to your account</span>
         </div>
 
         <div className={styles.copy}>
-          <h1 className={styles.title}>Understand every document in seconds.</h1>
+          <h1 className={styles.title}>A secure and intelligent space for your private documents</h1>
           <p className={styles.lead}>
-            Upload contracts, reports, and invoices. Ask questions in plain language and get instant answers grounded in your own files.
+            A secure, intelligent home for your contracts, reports, invoices and research. Ask questions and get answers from your own files.
           </p>
         </div>
 
