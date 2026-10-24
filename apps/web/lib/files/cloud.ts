@@ -7,6 +7,7 @@ import {
   persistentMultipleTabManager,
 } from "firebase/firestore";
 import { connectStorageEmulator, FirebaseStorage, getStorage } from "firebase/storage";
+import { startAppCheck } from "../appCheck";
 import app, { USE_EMULATORS } from "../firebase";
 
 /**
@@ -18,6 +19,7 @@ let storage: FirebaseStorage | undefined;
 
 export function db(): Firestore {
   if (!firestore) {
+    startAppCheck();
     try {
       // Cache in IndexedDB so folders you've opened before show instantly, across tabs
       firestore = initializeFirestore(app, {
@@ -40,6 +42,7 @@ export function db(): Firestore {
 
 export function bucket(): FirebaseStorage {
   if (!storage) {
+    startAppCheck();
     storage = getStorage(app);
     if (USE_EMULATORS) connectStorageEmulator(storage, "127.0.0.1", 9199);
   }

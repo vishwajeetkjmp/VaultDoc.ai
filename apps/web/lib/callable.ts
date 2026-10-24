@@ -1,4 +1,5 @@
 import { connectFunctionsEmulator, getFunctions, httpsCallable, type Functions } from "firebase/functions";
+import { startAppCheck } from "./appCheck";
 import app, { USE_EMULATORS } from "./firebase";
 
 let functions: Functions | undefined;
@@ -6,6 +7,7 @@ let functions: Functions | undefined;
 /** Cloud Functions client, created on first use (same region as the functions). */
 export function fns(): Functions {
   if (!functions) {
+    startAppCheck();
     functions = getFunctions(app, "asia-south2");
     if (USE_EMULATORS) connectFunctionsEmulator(functions, "127.0.0.1", 5001);
   }
