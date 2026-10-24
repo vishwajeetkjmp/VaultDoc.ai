@@ -23,6 +23,7 @@ export const MergePdfTool = pdfTool("merge-pdf", "Merge PDF", "Combine PDFs and 
 export const ReorderPdfTool = pdfTool("reorder-pdf-pages", "Reorder PDF pages", "Drag pages into a new order", "reorder");
 export const RotatePdfTool = pdfTool("rotate-pdf", "Rotate PDF pages", "Fix sideways or upside-down pages", "rotate");
 export const RemovePdfPagesTool = pdfTool("remove-pdf-pages", "Remove PDF pages", "Delete pages you don't need", "remove");
+export const EditPdfTool = pdfTool("edit-pdf", "Edit PDF", "Add text, sign, white out and redact", "edit");
 
 export const ResizeCropImageTool: ITool = {
   id: "resize-crop-image",
@@ -44,5 +45,6 @@ export const FREE_TOOLS: ITool[] = [
   ReorderPdfTool,
   RotatePdfTool,
   RemovePdfPagesTool,
+  EditPdfTool,
   ResizeCropImageTool,
 ];

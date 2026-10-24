@@ -7,7 +7,8 @@ import ToolDropdown from "./ToolDropdown";
 import ThemeMenu from "./ThemeMenu";
 import ProfileMenu from "./ProfileMenu";
 import { useAuth } from "./AuthProvider";
-import { getToolGroups, isComingSoon, needsLogin } from "../lib/tools";
+import { getToolGroups, isComingSoon, needsLogin, needsPro } from "../lib/tools";
+import ProTag from "./ProTag";
 import LoginMark, { LOGIN_TIP } from "./LoginMark";
 import { applyTheme, getStoredTheme, ThemeName, THEMES } from "../lib/theme";
 import { withNext } from "../lib/nav";
@@ -75,8 +76,9 @@ export default function Navbar() {
         </div>
         {/* Until Firebase reports whether someone is logged in, keep the space empty so nothing flashes or jumps */}
         {loading && <span className={wasLoggedIn ? styles.avatarPlaceholder : styles.authPlaceholder} aria-hidden />}
+        {/* With the phone menu open, Login and Sign Up sit at the bottom of the menu instead */}
         {!loading && !user && (
-          <span className={styles.authArea}>
+          <span className={menuOpen ? `${styles.authArea} ${styles.hiddenWhileMenu}` : styles.authArea}>
             <Link href={withNext("/login", pathname)} className={styles.signIn}>
               Login
             </Link>
@@ -143,6 +145,7 @@ export default function Navbar() {
                               <span>
                                 {tool.name}
                                 <LoginMark unlocked={false} />
+                                {needsPro(tool) && <ProTag />}
                               </span>
                               <span className={styles.lockedNote}>{LOGIN_TIP}</span>
                             </span>
@@ -151,6 +154,7 @@ export default function Navbar() {
                               <span>
                                 {tool.name}
                                 {needsLogin(tool) && <LoginMark unlocked />}
+                                {needsPro(tool) && <ProTag />}
                               </span>
                               {isComingSoon(tool) && <span className={styles.soon}>Soon</span>}
                             </Link>

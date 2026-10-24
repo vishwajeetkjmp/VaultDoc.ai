@@ -1,0 +1,419 @@
+/* Edit PDF: toolbar that stays under the navbar, pages one under another, items laid over the pages */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------- Toolbar ---------- */
+.toolbar {
+  position: sticky;
+  top: 72px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+.tools {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tool:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.toolActive {
+  composes: tool;
+  color: var(--text);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.toolActive:hover {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.toolIcon {
+  width: 16px;
+  text-align: center;
+  font-weight: 700;
+}
+.download {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--cta-bg);
+  color: var(--cta-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.download:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.subbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 4px;
+}
+.hint {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.textControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.small {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.small:hover {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+.sizeLabel {
+  min-width: 44px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.swatch {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+}
+.swatchActive {
+  composes: swatch;
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.delete {
+  composes: small;
+  margin-left: auto;
+  border-color: color-mix(in srgb, #e5484d 50%, var(--border));
+  color: #e5484d;
+}
+.note {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.note + .delete {
+  margin-left: 0;
+}
+
+/* ---------- Pages ---------- */
+.pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0 24px;
+}
+.pageWrap {
+  width: 100%;
+  max-width: 860px;
+}
+.page {
+  position: relative;
+  width: 100%;
+  container-type: inline-size; /* text sizes use cqw, so they scale with the page */
+  overflow: hidden;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+  user-select: none;
+}
+.pageImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.pageLoading {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #f3f3f3, #fafafa, #f3f3f3);
+}
+.pageNumber {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.layer {
+  position: absolute;
+  inset: 0;
+}
+/* While adding or drawing, a finger on the page draws instead of scrolling */
+.layer:not([data-mode="select"]) {
+  touch-action: none;
+}
+.layer[data-mode="text"],
+.layer[data-mode="sign"] {
+  cursor: copy;
+}
+.layer[data-mode="whiteout"],
+.layer[data-mode="redact"] {
+  cursor: crosshair;
+}
+
+/* ---------- Items on a page ---------- */
+.item {
+  position: absolute;
+  touch-action: none;
+  cursor: move;
+}
+.selected {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.whiteout {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+.redact {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #000;
+}
+.redactLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+/* signatures: the image fills the box */
+.image {
+  display: block;
+}
+.signature {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.resize {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.textItem {
+  position: absolute;
+  border-radius: 2px;
+}
+.textContent {
+  min-width: 1ch;
+  padding: 0;
+  outline: none;
+  font-family: Helvetica, Arial, sans-serif; /* the font the PDF gets */
+  line-height: 1.2;
+  white-space: pre;
+  cursor: text;
+  user-select: text;
+}
+.textItem:hover:not(.selected) {
+  outline: 1px dashed color-mix(in srgb, var(--primary) 70%, transparent);
+  outline-offset: 2px;
+}
+.moveHandle {
+  position: absolute;
+  top: -26px;
+  left: -2px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  cursor: move;
+  touch-action: none;
+}
+
+/* ---------- Signature dialog ---------- */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+.modal {
+  width: min(560px, 100%);
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+}
+.modalTitle {
+  margin-bottom: 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.pad {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 1;
+  border-radius: 10px;
+  background: #fff;
+  touch-action: none;
+  cursor: crosshair;
+}
+.padRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.padHint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.inks {
+  display: flex;
+  gap: 8px;
+}
+.ink {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--card);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--border);
+  cursor: pointer;
+}
+.inkActive {
+  composes: ink;
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.error {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #e5484d;
+}
+.modalActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.solid {
+  composes: ghost;
+  border: 0;
+  background: var(--cta-bg);
+  color: var(--cta-text);
+  font-weight: 600;
+}
+.solid:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    top: 64px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 6px;
+  }
+  /* All five tools in one row: icon above a short label */
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    overflow: visible;
+  }
+  .tool {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    height: 50px;
+    padding: 0 2px;
+    font-size: 11.5px;
+  }
+  .toolIcon {
+    font-size: 15px;
+  }
+  .download {
+    width: 100%;
+    height: 36px;
+  }
+  .note {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}

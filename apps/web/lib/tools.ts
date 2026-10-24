@@ -29,6 +29,11 @@ export function needsLogin(tool: ITool): boolean {
   return !!TOOL_PAGES[tool.id]?.loginRequired;
 }
 
+/** Tools only Pro members can use (Edit PDF). */
+export function needsPro(tool: ITool): boolean {
+  return !!TOOL_PAGES[tool.id]?.proRequired;
+}
+
 /** A tool is live once the web app has a page for it (see toolPages.ts). */
 export function isComingSoon(tool: ITool): boolean {
   return !TOOL_PAGES[tool.id];

@@ -8,7 +8,8 @@ export type ToolKind =
   | { kind: "merge" }
   | { kind: "organize"; focus: "reorder" | "rotate" | "remove" }
   | { kind: "office" }
-  | { kind: "image-edit" };
+  | { kind: "image-edit" }
+  | { kind: "edit-pdf" };
 
 export type ToolPage = ToolKind & {
   /** File picker filter */
@@ -28,6 +29,8 @@ export type ToolPage = ToolKind & {
   local: boolean;
   /** Only logged-in users with a verified email can use it (server tools cost money to run; some others are account perks) */
   loginRequired?: boolean;
+  /** Only for Pro members (also set loginRequired, so visitors see it locked) */
+  proRequired?: boolean;
 };
 
 const IMAGE_ACCEPT = ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
@@ -153,6 +156,30 @@ export const TOOL_PAGES: Record<string, ToolPage> = {
       "Delete pages from a PDF free with an account. Pick pages visually and download. Your PDF never leaves your device.",
     ),
     loginRequired: true,
+  },
+  "edit-pdf": {
+    kind: "edit-pdf",
+    accept: ".pdf,application/pdf",
+    acceptLabel: "PDF",
+    multiple: false,
+    heading: "Edit PDF",
+    subheading: "Type on any page, sign it, white out mistakes, and redact private details for good.",
+    seoTitle: "Edit PDF online: add text, sign and redact | VaultDocAI",
+    seoDescription: "Add text and signatures to a PDF, white out mistakes, and permanently redact private details. Your PDF never leaves your device.",
+    steps: ["Add your PDF", "Add text, a signature, whiteout or redaction", "Download the edited PDF"],
+    faq: [
+      { q: "Is my PDF uploaded?", a: "No. Pages are shown and edited in your browser; the file never leaves your device." },
+      {
+        q: "What's the difference between whiteout and redact?",
+        a: "Whiteout puts a white box over something, but the text underneath is still in the file and can be copied. Redact removes it for good: that page is saved as an image with the black boxes burned in, so nothing underneath can be recovered.",
+      },
+      { q: "Can I change the existing text in the PDF?", a: "Not directly. White out the old words and type the new ones on top: it looks the same when printed or shared." },
+      { q: "Who can use it?", a: "Edit PDF is part of VaultDoc Pro." },
+    ],
+    related: ["merge-pdf", "remove-pdf-pages", "rotate-pdf"],
+    local: true,
+    loginRequired: true,
+    proRequired: true,
   },
   "resize-crop-image": {
     kind: "image-edit",

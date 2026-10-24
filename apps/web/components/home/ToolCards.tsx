@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getToolGroups, isComingSoon, needsLogin } from "../../lib/tools";
+import { getToolGroups, isComingSoon, needsLogin, needsPro } from "../../lib/tools";
+import ProTag from "../ProTag";
 import { useAuth } from "../AuthProvider";
 import LoginMark, { LOGIN_TIP } from "../LoginMark";
 import styles from "./toolCards.module.css";
@@ -56,6 +57,15 @@ const KINDS: Record<string, { color: string; path: React.ReactNode }> = {
       <>
         <path d="M4 7h16M10 11v6M14 11v6" />
         <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+      </>
+    ),
+  },
+  edit: {
+    color: "#14b8a6",
+    path: (
+      <>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
       </>
     ),
   },
@@ -128,6 +138,7 @@ export default function ToolCards() {
                   <span className={styles.name}>
                     {tool.name}
                     {loginTool && <LoginMark unlocked={loggedIn} />}
+                    {needsPro(tool) && <ProTag />}
                     {soon && <span className={styles.soon}>Soon</span>}
                   </span>
                   {tool.description && <span className={styles.desc}>{tool.description}</span>}
@@ -156,6 +167,7 @@ export default function ToolCards() {
                       <span className={styles.name}>
                         {tool.name}
                         <LoginMark unlocked={false} />
+                        {needsPro(tool) && <ProTag />}
                       </span>
                       {tool.description && <span className={styles.desc}>{tool.description}</span>}
                       <span id={tipId} role="tooltip" className={styles.tip}>
