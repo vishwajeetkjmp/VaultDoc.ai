@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import type { User } from "firebase/auth";
 import Avatar from "./Avatar";
 import { signOutUser } from "../lib/auth";
+import { useInstall } from "../lib/pwa";
 import { getDisplayName, getFirstName } from "../lib/profile";
 
 // Loaded only when the card opens, so pages like the landing page don't pull in Firestore
@@ -16,6 +17,8 @@ const StorageMeter = dynamic(() => import("./files/StorageMeter"), { ssr: false 
 export default function ProfileMenu({ user }: { user: User }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [iosHelp, setIosHelp] = useState(false);
+  const install = useInstall();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,6 +81,20 @@ export default function ProfileMenu({ user }: { user: User }) {
           <div style={styles.storage}>
             <StorageMeter uid={user.uid} />
           </div>
+
+          {install.kind !== "none" && (
+            <button
+              style={styles.installBtn}
+              onClick={() => (install.kind === "prompt" ? install.install().then(() => setOpen(false)) : setIosHelp((v) => !v))}
+            >
+              📲 Install the app
+            </button>
+          )}
+          {install.kind === "ios" && iosHelp && (
+            <div style={styles.iosHelp}>
+              In Safari, tap <b>Share</b> <span aria-hidden>⬆︎</span> then <b>Add to Home Screen</b>.
+            </div>
+          )}
 
           <Link href="/account" style={styles.accountLink} onClick={() => setOpen(false)}>
             Manage account
@@ -152,6 +169,25 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     fontWeight: 500,
     color: "var(--primary)",
+  },
+  installBtn: {
+    marginTop: 14,
+    width: "100%",
+    padding: "10px",
+    background: "transparent",
+    color: "var(--primary)",
+    border: "1px solid var(--border)",
+    borderRadius: 999,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  iosHelp: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 1.45,
+    color: "var(--text-muted)",
+    textAlign: "center",
   },
   signOutBtn: {
     marginTop: 16,

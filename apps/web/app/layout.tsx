@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, Newsreader } from "next/font/google";
 import "../styles/globals.css";
 import { AuthProvider } from "../components/AuthProvider";
 import ErrorReporter from "../components/ErrorReporter";
+import PwaStart from "../components/PwaStart";
 import { THEME_ORDER, THEME_STORAGE_KEY } from "../lib/theme";
 
 // Self-hosted at build time by Next.js (no requests to Google from visitors' browsers)
@@ -21,6 +22,23 @@ export const metadata: Metadata = {
   title: "VaultDocAI — Understand every document in seconds",
   description:
     "AI document intelligence. Upload documents and ask questions in plain language.",
+  // Installable as an app (see public/manifest.webmanifest and lib/pwa.ts)
+  manifest: "/manifest.webmanifest",
+  applicationName: "VaultDocAI",
+  icons: {
+    icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/favicon-48.png", sizes: "48x48", type: "image/png" },
+    ],
+    apple: { url: "/icons/apple-touch-icon.png", sizes: "180x180" },
+  },
+  appleWebApp: { capable: true, title: "VaultDoc", statusBarStyle: "black-translucent" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a1628",
+  // Content can use the full screen of phones with a notch when opened as an app
+  viewportFit: "cover",
 };
 
 // Applies the saved theme before the page paints, on every page (not only where the
@@ -41,6 +59,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>{children}</AuthProvider>
         <ErrorReporter />
+        <PwaStart />
       </body>
     </html>
   );

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0a1628" />
+    <title>You're offline · VaultDocAI</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: #0a1628;
+        color: #e6edf7;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        text-align: center;
+      }
+      img { width: 72px; height: 72px; border-radius: 18px; }
+      h1 { margin: 20px 0 8px; font-size: 22px; }
+      p { margin: 0 auto 24px; max-width: 320px; color: #9fb0c8; line-height: 1.5; }
+      button {
+        height: 44px;
+        padding: 0 24px;
+        border: 0;
+        border-radius: 999px;
+        background: #3b82f6;
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="" />
+      <h1>You're offline</h1>
+      <p>VaultDocAI needs the internet to open your files. Check your connection and try again.</p>
+      <button onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
