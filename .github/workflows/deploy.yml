@@ -1,0 +1,93 @@
+# Deploy: publishes the website and the admin app to Firebase Hosting.
+#
+#   push to main → CI passes → this workflow waits for your "Approve" → deploy
+#
+# The wait comes from the GitHub environment "production" (Settings → Environments),
+# which lists you as required reviewer. Google lets this workflow in without any
+# stored password or key (Workload Identity Federation); see docs/deploy-pipeline.md.
+# Functions and rules are still deployed from the Mac for now.
+name: Deploy
+
+on:
+  # Runs after the CI workflow finishes (on any branch; the job below keeps only main)
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  workflow_dispatch: # "Run workflow" button: redeploy main without a new push
+
+# One deploy at a time; a newer one waits instead of cancelling a deploy halfway
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # lets the job ask GitHub for a signed "who am I" token to show Google
+
+jobs:
+  hosting:
+    name: Deploy website and admin
+    # Only a successful CI run of a push to main (or the manual button)
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    # The approval gate. Google also only trusts jobs running in this environment.
+    environment:
+      name: production
+      url: https://vaultdocai.com
+
+    env:
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ vars.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ vars.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ vars.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ vars.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
+      # Exactly the commit CI tested (the button uses the latest main)
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+    steps:
+      - name: Get the code CI tested
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.DEPLOY_SHA }}
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install packages
+        run: npm ci
+
+      # Swaps GitHub's token for short-lived Google credentials of the
+      # github-deployer service account (no key file anywhere)
+      - name: Sign in to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      # firebase.json's predeploy builds each site before uploading it
+      - name: Deploy the website (vaultdocai.com)
+        run: npx firebase deploy --only hosting:vaultdoc-ai --project vaultdoc-ai --non-interactive -m "GitHub ${DEPLOY_SHA::7}"
+
+      - name: Deploy the admin app (admin.vaultdocai.com)
+        env:
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: vaultdoc-ai.firebaseapp.com # admin signs in on Firebase's own domain
+        run: npx firebase deploy --only hosting:vaultdoc-admin --project vaultdoc-ai --non-interactive -m "GitHub ${DEPLOY_SHA::7}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Deployed \`${DEPLOY_SHA::7}\`"
+            echo "- Website: https://vaultdocai.com"
+            echo "- Admin: https://admin.vaultdocai.com"
+          } >> "$GITHUB_STEP_SUMMARY"
