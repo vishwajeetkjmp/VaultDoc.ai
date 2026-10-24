@@ -101,11 +101,15 @@ async function userRows(records: UserRecord[]) {
   }));
 }
 
-async function targetUser(data: Record<string, unknown>, actor: Admin): Promise<UserRecord> {
+async function targetUser(data: Record<string, unknown>, actor: Admin, { allowOwnerSelf = false } = {}): Promise<UserRecord> {
   if (typeof data.uid !== "string" || !data.uid) throw new HttpsError("invalid-argument", "Which user?");
   const user = await getAuth().getUser(data.uid).catch(() => null);
   if (!user) throw new HttpsError("not-found", "That user doesn't exist.");
-  if (user.uid === actor.uid) throw new HttpsError("failed-precondition", "You can't do this to your own account.");
+  if (user.uid === actor.uid) {
+    // The Owner may change their own plan (e.g. to try Pro); every other action on your own account stays blocked
+    if (allowOwnerSelf && actor.role === "owner") return user;
+    throw new HttpsError("failed-precondition", "You can't do this to your own account.");
+  }
   const role = user.customClaims?.role;
   if (isRole(role) && RANK[role] >= RANK[actor.role]) throw new HttpsError("permission-denied", "You can't change an admin with the same or a higher role.");
   return user;
@@ -205,7 +209,7 @@ const actions: Record<string, Handler> = {
     const action = String(data.op ?? "");
     const actor = requireRole(request, action === "delete" ? "owner" : "support");
     const reason = reasonOf(data);
-    const user = await targetUser(data, actor);
+    const user = await targetUser(data, actor, { allowOwnerSelf: action === "setPlan" });
     const target = { uid: user.uid, email: user.email ?? undefined };
     let details: Record<string, unknown> | undefined;
 

@@ -317,7 +317,7 @@ function UserPanel({ uid, onClose, onChanged, onDeleted }: { uid: string; onClos
               {d.aiEnabled ? `On · ${d.aiUsedToday} of ${d.aiDailyLimit ?? d.defaultAiDailyLimit} used today${d.aiDailyLimit !== null ? " (custom limit)" : ""}` : "Off"}
               {d.aiUsage.total.questions > 0 && (
                 <div className="muted small">
-                  Cost: {inr(d.aiUsage.today.costMicroUsd)} today · {inr(d.aiUsage.month.costMicroUsd)} this month ({num(d.aiUsage.month.questions)} questions) ·{" "}
+                  Cost: {inr(d.aiUsage.today.costMicroUsd)} today · {inr(d.aiUsage.month.costMicroUsd)} this month ({num(d.aiUsage.month.questions)} question{d.aiUsage.month.questions === 1 ? "" : "s"}) ·{" "}
                   {inr(d.aiUsage.total.costMicroUsd)} in total ({num(d.aiUsage.total.questions)})
                 </div>
               )}
