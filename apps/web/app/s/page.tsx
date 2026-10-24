@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import SharePage from "../../../components/share/SharePage";
+import SharedLink from "../../components/share/SharedLink";
 
 // Shared links are private: keep them out of search engines and link previews
 export const metadata: Metadata = {
@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function SharedLinkPage({ params }: { params: { linkId: string } }) {
-  return <SharePage linkId={params.linkId} />;
+/** Every /s/<link> address is served this one static page (see firebase.json); the link is read in the browser. */
+export default function SharedLinkPage() {
+  return <SharedLink />;
 }

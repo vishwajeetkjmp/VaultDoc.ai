@@ -26,6 +26,8 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "https://vaultdoc-ai.web.app",
   "https://vaultdoc-ai.firebaseapp.com",
+  "https://vaultdocai.com",
+  "https://www.vaultdocai.com",
 ];
 
 // .docx files are ZIP archives; .doc files are OLE compound documents

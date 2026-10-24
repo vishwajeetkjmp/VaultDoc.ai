@@ -41,6 +41,84 @@
   },
   "hosting": [
     {
+      "site": "vaultdoc-ai",
+      "public": "apps/web/out",
+      "predeploy": [
+        "npm --prefix \"$PROJECT_DIR\" run build"
+      ],
+      "ignore": [
+        "**/.*"
+      ],
+      "cleanUrls": true,
+      "trailingSlash": false,
+      "redirects": [
+        {
+          "source": "/signin",
+          "destination": "/login",
+          "type": 301
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/s/**",
+          "destination": "/s.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "X-Frame-Options",
+              "value": "SAMEORIGIN"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            },
+            {
+              "key": "Referrer-Policy",
+              "value": "strict-origin-when-cross-origin"
+            },
+            {
+              "key": "Permissions-Policy",
+              "value": "camera=(), microphone=(), geolocation=()"
+            },
+            {
+              "key": "Strict-Transport-Security",
+              "value": "max-age=31536000; includeSubDomains"
+            },
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        },
+        {
+          "source": "/_next/static/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000, immutable"
+            }
+          ]
+        },
+        {
+          "source": "/pdf.worker.min.mjs",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "text/javascript"
+            },
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=604800"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "site": "vaultdoc-admin",
       "public": "apps/admin/out",
       "predeploy": [
