@@ -92,6 +92,7 @@ export default function FilesApp({ user }: { user: User }) {
   const [chain, setChain] = useState<Item[]>([]); // folders from the top down to the current one
   const [search, setSearch] = useState("");
   const [menu, setMenu] = useState<{ x: number; y: number; actions: MenuAction[] } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -286,6 +287,32 @@ export default function FilesApp({ user }: { user: User }) {
     });
   };
 
+  /**
+   * Toolbar "Ask AI": the selected document, or a pick list of this folder's documents.
+   * One file at a time; asking about several files together is planned for Premium (v2).
+   */
+  const askAi = (e: React.MouseEvent<HTMLElement>) => {
+    if (selectedItem && aiReadable(selectedItem)) return setDialog({ type: "ai", item: selectedItem });
+    const docs = visible.filter(aiReadable);
+    const r = e.currentTarget.getBoundingClientRect();
+    const file = <span aria-hidden style={{ width: 18, textAlign: "center" }}>📄</span>;
+    setMenu({
+      x: r.left,
+      y: r.bottom + 6,
+      actions: [
+        ...(docs.length
+          ? docs.slice(0, 10).map((item): MenuAction => ({ label: item.name, icon: file, onSelect: () => setDialog({ type: "ai", item }) }))
+          : [{ label: "Upload a document to ask about", icon: <UploadIcon size={18} />, onSelect: () => fileInput.current?.click() }]),
+        "divider",
+        {
+          label: "Several files together · Premium",
+          icon: <span aria-hidden style={{ width: 18, textAlign: "center" }}>👑</span>,
+          onSelect: () => showToast("Asking about several files together is coming soon with Premium."),
+        },
+      ],
+    });
+  };
+
   // Drag and drop anywhere over the file area
   const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
   const dropHandlers = {
@@ -451,7 +478,15 @@ export default function FilesApp({ user }: { user: User }) {
               )}
             </nav>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button className={styles.button} onClick={() => setDialog({ type: "newFolder" })}>
+              <button
+                className={styles.aiButton}
+                onClick={askAi}
+                aria-haspopup={selectedItem && aiReadable(selectedItem) ? undefined : "menu"}
+                title={selectedItem && aiReadable(selectedItem) ? `Ask AI about “${selectedItem.name}” (A)` : "Ask AI about a document in this folder"}
+              >
+                <span aria-hidden>✨</span> Ask AI
+              </button>
+              <button className={`${styles.button} ${styles.toolbarNewFolder}`} onClick={() => setDialog({ type: "newFolder" })}>
                 New folder
               </button>
               <button className={styles.primaryButton} onClick={() => fileInput.current?.click()}>
@@ -466,6 +501,7 @@ export default function FilesApp({ user }: { user: User }) {
             sharedIds={sharedIds}
             onShare={(item) => setDialog({ type: "share", item })}
             onAskAi={(item) => aiReadable(item) && setDialog({ type: "ai", item })}
+            onSelectionChange={setSelectedItem}
             loading={loading}
             searching={!!search.trim()}
             onOpen={open}

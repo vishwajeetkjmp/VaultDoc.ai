@@ -37,10 +37,12 @@ type Props = {
   sharedIds?: Set<string>;
   onShare?: (item: Item) => void;
   onAskAi?: (item: Item) => void;
+  /** The selected row changed (or was cleared) */
+  onSelectionChange?: (item: Item | null) => void;
   emptyState: React.ReactNode;
 };
 
-export default function FileList({ items, pendingIds, loading, searching, onOpen, onMenu, onDelete, onRename, sharedIds, onShare, onAskAi, emptyState }: Props) {
+export default function FileList({ items, pendingIds, loading, searching, onOpen, onMenu, onDelete, onRename, sharedIds, onShare, onAskAi, onSelectionChange, emptyState }: Props) {
   const [sort, setSort] = useState<Sort>({ key: "name", dir: 1 });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
@@ -52,6 +54,10 @@ export default function FileList({ items, pendingIds, loading, searching, onOpen
   useEffect(() => {
     if (selectedId && !items.some((i) => i.id === selectedId)) setSelectedId(null);
   }, [items, selectedId]);
+
+  useEffect(() => {
+    onSelectionChange?.(selected);
+  }, [selected, onSelectionChange]);
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: key === "name" ? 1 : -1 }));
