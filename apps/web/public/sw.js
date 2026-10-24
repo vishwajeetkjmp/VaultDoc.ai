@@ -1,8 +1,9 @@
 // VaultDocAI service worker. It makes the site installable as an app and shows a friendly page
 // when there's no internet. It never stores your files, documents or account data: everything
 // else (pages, Firebase, file downloads) always comes straight from the network.
-const CACHE = "vaultdoc-offline-v2";
-const OFFLINE_URL = "/offline.html";
+const CACHE = "vaultdoc-offline-v3";
+// Without ".html": the live site serves clean URLs, and a fallback page must not be a redirect
+const OFFLINE_URL = "/offline";
 const OFFLINE_FILES = [OFFLINE_URL, "/icons/icon-192.png"]; // the offline page and its picture
 
 self.addEventListener("install", (event) => {
